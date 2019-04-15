@@ -5,7 +5,7 @@ var n_steps_in_tread = 6;
 var goal_tolerance = walk_speed/2; // never smaller than 0.5*walk_speed! left and right of goal
 var slogans_enabled = true; // for safety reasons possible to switch it off...
 var slogans = [
-    "mir platzt gleich der Arsch",
+    "Mir platzt gleich der Arsch",
     "HÖMMA!",
     "Das müssen wir jetzt sofort klären, SOFORT!",
     "Da krieg ich Puls!"
