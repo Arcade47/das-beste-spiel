@@ -186,7 +186,7 @@ function show_start_screen() {
 function show_instructions() {
     set_canvas_bg("black");  
     var lines = [
-        "In der folgenden Aufgabe sollen Sie in 210 Sekunden so viel wie möglich Geld erwirtschaften.",
+        "In der folgenden Aufgabe sollen Sie in 210 Sekunden so viel Geld wie möglich erwirtschaften.",
         "Sie generieren Geld, indem Sie im Büro arbeiten und genügend Mitarbeiter produktiv sind.",
         "Sie können Mitarbeiter produktiv halten, indem Sie auf die entsprechenden Türen klicken.",
         "Beachten Sie aber, dass Sie dann für eine gewisse Zeit nicht im Büro sind.",
