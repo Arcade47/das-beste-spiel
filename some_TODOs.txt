@@ -1,0 +1,14 @@
+- count number of walkers
+	> number of 0s labelled
+- mk sure the function with coworkers in room works
+	> change when:
+		- goal is reached with maximum boredom
+		- 
+- mk sure coworker.working is resetted correctly
+	> reset when:
+		-
+
+prob: if coworkers sped up, then tolerance needs to be adjusted...
+prob: when scared, both doors are talking
+
+mailto:nico.adelhoefer@ukdd.de&subject=aaa&body=bbb
