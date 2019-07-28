@@ -13,7 +13,7 @@ var slogans = [
 var curse_dur = 2.5; // speech bubble visibility in seconds
 // gameplay-relevant parameters
 var time_left = 210; // 3 minutes seem realistic
-var n_floors = 5;
+var n_floors = 3;
 var n_offices_per_floor = 5;
 var floor_height = 80;
 var money = 5000; // realistic start: 500000
