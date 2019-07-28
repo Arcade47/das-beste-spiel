@@ -1,37 +1,16 @@
-## Welcome to GitHub Pages
+## This is "Das Beste(-)Spiel".
 
-You can use the [editor on GitHub](https://github.com/nicoa47/Das-Beste-Spiel/edit/master/README.md) to maintain and preview the content for your website in Markdown files.
+A highly realistic simulation of the everyday duties of a boss overseeing several offices.
+The goal is, at the end of the day, to generate money. At the very least not lose all of it.
+The employees help in this regard, but only as long as they are productive!
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+## How to play
 
-### Markdown
+To start the stimulation, first press enter. Instructions in German appear, press space to proceed.
+From then on, you play with the mouse. Therefore, checking emails whilst playing is easily done.
+The rules are simple: Stay in your office as long as enough employees are productive. Closely observe the money counter on the top left - if numbers are falling, you should act! Click on the doors of your employees that cost too much but find it more interesting to talk about their day or take a nap rather than work! But be careful - as soon as you leave your office to go on patrol, you stop making money.
+The realism of this simulation can only go so far - rather than the 18 hours of the typical workday, a day in this simulation is only 3 1/2 minutes.
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
+## Usages of this simulation
 
-```markdown
-Syntax highlighted code block
-
-# Header 1
-## Header 2
-### Header 3
-
-- Bulleted
-- List
-
-1. Numbered
-2. List
-
-**Bold** and _Italic_ and `Code` text
-
-[Link](url) and ![Image](src)
-```
-
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
-
-### Jekyll Themes
-
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/nicoa47/Das-Beste-Spiel/settings). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
-
-### Support or Contact
-
-Having trouble with Pages? Check out our [documentation](https://help.github.com/categories/github-pages-basics/) or [contact support](https://github.com/contact) and we’ll help you sort it out.
+I firmly believe that every boss of an institution or company can greatly profit from practicing this game daily. Studies are underway. I provide this service for free, but if you are a successful CEO please consider donating some money.
