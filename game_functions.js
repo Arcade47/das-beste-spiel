@@ -144,7 +144,7 @@ function get_ind_of_highscore(value, scores) {
 function re_init_all_vars() {
     // gameplay-relevant parameters
     time_left = 210; // 3.5 minutes seem realistic
-    n_floors = 5;
+    n_floors = 3;
     n_offices_per_floor = 5;
     floor_height = 80;
     money = 500000; // realistic start: 500000
