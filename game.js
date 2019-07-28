@@ -271,7 +271,7 @@ class BankAccount {
     gameover() {
         // this.balance = "GAME OVER   ".concat(this.balance);
         timer.highscore();
-        // game_running = false;
+        game_running = false;
     }
     render() {
         draw_canvas_text_flex(String(this.balance).concat(" €"), this.pos, this.color, this.size, "left")
