@@ -45,7 +45,6 @@ var instructions = false;
 document.addEventListener("keydown", keydown);
 document.addEventListener("mousemove", mousemove);
 document.addEventListener("mousedown", mousedown);
-document.querySelector('#start').addEventListener('click', start_game);
 
 // ask allowance to read/write (for later highscores)
 // window.webkitRequestFileSystem(window.PERSISTENT, 1024*1024, savefile);
@@ -1088,11 +1087,7 @@ function mousemove(e) {
     current_pos = getXY_exact(e);
 }
 function mousedown(e) {
-    if (start_screen) {
-            start_screen = false;
-            instructions = true;
-            show_instructions();
-        }
+    
     if (e.which == 1) { // LMB
         for (let index = 0; index < doors.length; index++) {
             if (doors[index].clicked_on(current_pos)) {
