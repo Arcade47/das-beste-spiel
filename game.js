@@ -38,7 +38,7 @@ var current_pos = {x: 0, y: 0};
 var startTime = new Date(); // initialization
 var endTime, secondsElapsed;
 var game_running = false;
-var start_screen = true;
+var start_screen = false;
 var instructions = false;
 
 // add event listeners
