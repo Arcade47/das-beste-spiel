@@ -1088,6 +1088,11 @@ function mousemove(e) {
     current_pos = getXY_exact(e);
 }
 function mousedown(e) {
+    if (start_screen) {
+            start_screen = false;
+            instructions = true;
+            show_instructions();
+        }
     if (e.which == 1) { // LMB
         for (let index = 0; index < doors.length; index++) {
             if (doors[index].clicked_on(current_pos)) {
