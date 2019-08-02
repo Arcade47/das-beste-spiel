@@ -45,6 +45,7 @@ var instructions = false;
 document.addEventListener("keydown", keydown);
 document.addEventListener("mousemove", mousemove);
 document.addEventListener("mousedown", mousedown);
+document.querySelector('#start').addEventListener('click', start_game);
 
 // ask allowance to read/write (for later highscores)
 // window.webkitRequestFileSystem(window.PERSISTENT, 1024*1024, savefile);
@@ -1035,6 +1036,28 @@ function draw_all() {
 }
 
 // event listener functions
+
+function start_game() {
+if (start_screen) {
+            start_screen = false;
+            instructions = true;
+            show_instructions();
+        }
+        if (!instructions && !game_running) {
+            // re-init all vars
+            re_init_all_vars();
+            // start updating again
+            update();
+        }
+if (instructions) {
+            instructions = false;
+            game_running = true;
+            // re-init all vars
+            re_init_all_vars();
+            // start updating again
+            update();
+        }
+}
 
 function keydown(e) {
     if (e.key == "Enter") {
