@@ -148,8 +148,8 @@ function re_init_all_vars() {
     n_offices_per_floor = 5;
     floor_height = 80;
     money = 500000; // realistic start: 500000
-    min_awake_dur = 0.05*time_left;
-    max_awake_dur = 1.0*time_left;
+    min_awake_dur = 2; // 0.05*time_left;
+    max_awake_dur = 3; // 1.0*time_left;
     walk_speed = 2;
     cost_of_sleep_per_person_per_frame = 20; // careful: time in frames, not seconds
     boss_productivity_per_person_per_frame = 12; // gain of money
