@@ -75,8 +75,8 @@ class Text {
 
 class Timer extends Text {
     constructor(start_time) {
-        super(start_time, {x: canvas.width - 20, y: canvas.height/6 - canvas.height/50});// {x:canvas.width/2 - 30, y:50}
-        this.size = canvas.height/6;
+        super(start_time, {x: canv_w - 20, y: canv_h/6 - canv_h/50});// {x:canv_w/2 - 30, y:50}
+        this.size = canv_h/6;
         this.label = start_time;
         this.second = 1;
         this.align = "right";
@@ -143,13 +143,13 @@ class CoworkerStateText extends Text {
     constructor(label, pos, color, speed) {
         super(label, pos);
         this.color = color; // lightblue
-        this.max_dist = 0.075*canvas.height; // units it is allowed to float
+        this.max_dist = 0.075*canv_h; // units it is allowed to float
         var startx = this.pos.x;
         var starty = this.pos.y;
         this.start_pos = {x: startx, y: starty};//{x: pos.x, y: pos.y}; // make copy, else linked!
         this.start_size = this.size;
         this.speed = speed; // px per frame in each axis (0.2 for sleep)
-        this.size_increase = 0.002*canvas.height; // size increase per frame
+        this.size_increase = 0.002*canv_h; // size increase per frame
     }
     distance() {
         // distance to start
@@ -180,7 +180,7 @@ class CoworkerStateText extends Text {
 
 class SleepText extends CoworkerStateText {
     constructor(pos) {
-        super("z", pos, "lightblue", 0.0001*canvas.width);
+        super("z", pos, "lightblue", 0.0001*canv_w);
     }
 }
 
@@ -199,7 +199,7 @@ class TalkText extends Text {
         this.color = "black";
         this.pos_list = [];
         this.seconds_elapsed = 0;
-        this.size = 0.05*canvas.height;
+        this.size = 0.05*canv_h;
         this.door = door;
         this.max_texts = 2;
         this.bla_dur = 0.7;
@@ -233,8 +233,8 @@ class BankAccount {
         this.balance = start_capital;
         this.color = "lime";
         this.sleeping_n = 0;
-        this.pos = {x: canvas.width/2, y: canvas.height/6 - canvas.height/50};
-        this.size = canvas.height/6;
+        this.pos = {x: canv_w/2, y: canv_h/6 - canv_h/50};
+        this.size = canv_h/6;
         this.align = "right";
     }
     update() {
@@ -301,18 +301,18 @@ class Building {
         this.n_floors = n_floors;
         this.height = floor_height;
         // set canvas dimensions!
-        // canvas.width = 2*this.stairway_width + this.hallway_length + 140;
-        // canvas.height = n_floors*floor_height + 140;
+        // canv_w = 2*this.stairway_width + this.hallway_length + 140;
+        // canv_h = n_floors*floor_height + 140;
         // derived vars
-        this.stairway1_start_x = canvas.width/2 - this.hallway_length/2 - this.stairway_width;
-        this.stairway2_start_x = canvas.width/2 + this.hallway_length/2;
+        this.stairway1_start_x = canv_w/2 - this.hallway_length/2 - this.stairway_width;
+        this.stairway2_start_x = canv_w/2 + this.hallway_length/2;
         this.building_height = floor_height*this.n_floors;
     }
     render() {
         // stairways boxes
-        draw_rect_outline({x: this.stairway1_start_x, y: canvas.height - this.building_height - 0.5*grass.height},
+        draw_rect_outline({x: this.stairway1_start_x, y: canv_h - this.building_height - 0.5*grass.height},
             this.stairway_width, this.building_height, "black", "white");
-        draw_rect_outline({x: this.stairway2_start_x, y: canvas.height - this.building_height - 0.5*grass.height},
+        draw_rect_outline({x: this.stairway2_start_x, y: canv_h - this.building_height - 0.5*grass.height},
             this.stairway_width, this.building_height, "black", "white");
     }
 }
@@ -375,9 +375,9 @@ class Story extends Building { // here also doors are added
         this.n_doors = n_offices_per_floor;
         this.floor_n = floor_n;
         // derived vars
-        this.start_x = canvas.width/2 - this.hallway_length/2; // only hallway
+        this.start_x = canv_w/2 - this.hallway_length/2; // only hallway
         this.end_x = this.start_x + this.hallway_length; // only hallway
-        this.start_y = canvas.height - this.floor_n*this.height; // only hallway
+        this.start_y = canv_h - this.floor_n*this.height; // only hallway
         // derived vars - stairs
         this.stairs1 = new Stairs(0, this.stairway1_start_x + this.stairway_width, 
             this.stairway1_start_x, this.start_y - this.height - 0.5*grass.height);
@@ -503,8 +503,8 @@ class Door extends Building { // "extends Story" leads to recursion problems unf
             }
         }
         if (this.labelled) {
-            var padding = ((floor_height - this.door_height) - canvas.height/15)/2;
-            draw_canvas_text_flex(this.num, {x: this.x1 + this.door_width/2, y: this.y1 - padding}, "red", canvas.height/15, "center");
+            var padding = ((floor_height - this.door_height) - canv_h/15)/2;
+            draw_canvas_text_flex(this.num, {x: this.x1 + this.door_width/2, y: this.y1 - padding}, "red", canv_h/15, "center");
         }
     }
     render_path_doors() { // delete, only debugging...
@@ -517,7 +517,7 @@ class Door extends Building { // "extends Story" leads to recursion problems unf
 class Person extends Mover {
     constructor() {
         super();
-        this.pos = {x: canvas.width/2 - 60, y: canvas.height/2};
+        this.pos = {x: canv_w/2 - 60, y: canv_h/2};
         this.head_r = floor_height/20;
         this.height = floor_height/2.5 - (floor_height/2.5)/5;
         this.width = 2.75*this.head_r;
@@ -560,7 +560,7 @@ class Person extends Mover {
     }
     get_story_y(building) {
         var story = this.get_story();
-        return canvas.height - building.height*story - 0.5*grass.height;
+        return canv_h - building.height*story - 0.5*grass.height;
     }
     stairway_turn() {
         // just switch p1 and p3
@@ -627,7 +627,7 @@ class Person extends Mover {
     choose_closest_stairs(start_x, end_x) { // left or right given doors are not in same floor
         // note: building coordinates neglected because everything is centered
         var left = start_x + end_x;
-        var right = (canvas.width - start_x) + (canvas.width - end_x);
+        var right = (canv_w - start_x) + (canv_w - end_x);
         if (!this.scared) { // only rational navigation decision when calmed down
             if (left < right) {
                 return -1; // left
@@ -969,11 +969,11 @@ class DaBoss extends Person {
 
 class Grass {
     constructor() {
-        this.width = canvas.width;
-        this.height = canvas.height/6;
+        this.width = canv_w;
+        this.height = canv_h/6;
     }
     render() {
-        draw_rect({x: 0, y: canvas.height - this.height}, this.width, this.height, "green");
+        draw_rect({x: 0, y: canv_h - this.height}, this.width, this.height, "green");
     }
 }
 
@@ -1018,7 +1018,7 @@ function draw_all() {
 
     // setup
     set_canvas_bg("blue");
-    draw_rect({x: 0, y: 0}, canvas.width, canvas.height/6, "black");
+    draw_rect({x: 0, y: 0}, canv_w, canv_h/6, "black");
     grass.render();
     building.render();
     bank_account.render();
@@ -1087,6 +1087,10 @@ function mousedown(e) {
         } else if (instructions) {
             instructions = false;
             game_running = true;
+
+            // ctx.rotate((90/360)*(2*Math.PI));
+	        // ctx.translate(0, -window.innerWidth);
+
             // re-init all vars
             re_init_all_vars();
             // start updating again

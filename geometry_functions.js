@@ -39,8 +39,13 @@ function getXY(e) {
 function getXY_exact(e) {
 	
 	// return exact position relative to canvas (for physics)
-	var x_exact = mouse_pos_relative_to_canvas(e).x;
-	var y_exact = mouse_pos_relative_to_canvas(e).y;
+	if (canvas.height > canvas.width) {
+		var x_exact = mouse_pos_relative_to_canvas(e).y;
+		var y_exact = canvas.width - mouse_pos_relative_to_canvas(e).x;
+	} else {
+		var x_exact = mouse_pos_relative_to_canvas(e).x;
+		var y_exact = mouse_pos_relative_to_canvas(e).y;
+	}
 	return {x: x_exact, y: y_exact};
 	
 }
@@ -71,8 +76,8 @@ function pos_to_cells(pos) {
 	output = [];
 	to_be_tested = [];
 	
-	px_per_col = canvas.width/n_cols;
-	px_per_row = canvas.height/n_rows;
+	px_per_col = canv_w/n_cols;
+	px_per_row = canv_h/n_rows;
 	
 	to_be_tested.push({col: Math.round(pos.x/px_per_col) -1, row: Math.round(pos.y/px_per_row) -1});
 	to_be_tested.push({col: Math.round(pos.x/px_per_col) -1, row: Math.round(pos.y/px_per_row)});
@@ -97,8 +102,8 @@ function pos_to_cells_random(pos) {
 	output = [];
 	to_be_tested = [];
 	
-	var px_per_col = canvas.width/n_cols;
-	var px_per_row = canvas.height/n_rows;
+	var px_per_col = canv_w/n_cols;
+	var px_per_row = canv_h/n_rows;
 	var halfy = px_per_row/2;
 	
 	// special case: exactly in middle, then not two coords
@@ -132,8 +137,8 @@ function keep_col_val_equal(cell_list, colval) {
 
 function get_vertical_cells_string(line) {
 	
-	var px_per_col = canvas.width/n_cols;
-	var px_per_row = canvas.height/n_rows;
+	var px_per_col = canv_w/n_cols;
+	var px_per_row = canv_h/n_rows;
 	var halfx = px_per_col/2;
 	var halfy = px_per_row/2;
 	
@@ -177,8 +182,8 @@ function pos_to_cell(pos) {
 	
 	// pos exactly between grid lines --> only one solution
 	
-	var px_per_col = canvas.width/n_cols;
-	var px_per_row = canvas.height/n_rows;
+	var px_per_col = canv_w/n_cols;
+	var px_per_row = canv_h/n_rows;
 	var halfx = px_per_col/2;
 	var halfy = px_per_row/2;
 	
@@ -209,8 +214,8 @@ function line_to_grid_cells(line) {
 	// output: coordinates that are occupied
 	output = [];
 	
-	px_per_col = canvas.width/n_cols;
-	px_per_row = canvas.height/n_rows;
+	px_per_col = canv_w/n_cols;
+	px_per_row = canv_h/n_rows;
 	
 	var aabb_inds = aabb_cells_from_line(line);
 	
@@ -232,7 +237,7 @@ function is_inside_canvas(e) {
 	var x = mouse_pos_relative_to_canvas(e).x;
 	var y = mouse_pos_relative_to_canvas(e).y;
 	
-	if (x < 0 || x > canvas.width || y < 0 || y > canvas.height) {
+	if (x < 0 || x > canv_w || y < 0 || y > canv_h) {
 		return false;
 	}
 	
@@ -242,8 +247,8 @@ function is_inside_canvas(e) {
 
 function create_vertex_pos(x, y) {
 	 
-	px_per_col = canvas.width/n_cols;
-	px_per_row = canvas.height/n_rows;
+	px_per_col = canv_w/n_cols;
+	px_per_row = canv_h/n_rows;
 	
 	// index of line in grid
 	var x_ind = Math.round(x / px_per_col);
@@ -364,12 +369,12 @@ function bound_line_horizontal(line, lowerb, upperb) {
 	// special cases first: smaller as bounds
 	if (ordered_l[0].x > lowerb) { p1.x = ordered_l[0].x; p1.y = ordered_l[0].y; }
 	else {
-		lowerb_line = [{x: lowerb, y: 0}, {x: lowerb, y:canvas.height}];
+		lowerb_line = [{x: lowerb, y: 0}, {x: lowerb, y:canv_h}];
 		p1 = line_line_inters(ordered_l, lowerb_line);
 	}
 	if (ordered_l[1].x < upperb) { p2.x = ordered_l[1].x; p2.y = ordered_l[1].y; }
 	else {
-		upperb_line = [{x: upperb, y: 0}, {x: upperb, y:canvas.height}];
+		upperb_line = [{x: upperb, y: 0}, {x: upperb, y:canv_h}];
 		p2 = line_line_inters(ordered_l, upperb_line);
 	}
 	return [p1, p2];
@@ -403,8 +408,8 @@ function aabb_cells_from_line(line) {
 	// order according to AABB conventions
 	var ordered_coords = aabb_from_line(line);
 	
-	var px_per_col = canvas.width/n_cols;
-	var px_per_row = canvas.height/n_rows;
+	var px_per_col = canv_w/n_cols;
+	var px_per_row = canv_h/n_rows;
 	
 	var sx = Math.round(ordered_coords[0].x / px_per_col) - 1;
 	var sy = Math.round(ordered_coords[0].y / px_per_row) - 1;
@@ -480,8 +485,8 @@ function get_inds_around_vertex(pos) {
 	// return 1, 2 or 3 cells (depending whether on edge)
 	output = [];
 	
-	var px_per_col = canvas.width/n_cols;
-	var px_per_row = canvas.height/n_rows;
+	var px_per_col = canv_w/n_cols;
+	var px_per_row = canv_h/n_rows;
 	
 	var sx = Math.round(pos.x / px_per_col) - 1;
 	var sy = Math.round(pos.y / px_per_row) - 1;
@@ -505,8 +510,8 @@ function cell_from_coord_diff(coord_diff) {
 	// output dimensions: col and row values
 	// both are differences, not absolute values
 	
-	var px_per_col = canvas.width/n_cols;
-	var px_per_row = canvas.height/n_rows;
+	var px_per_col = canv_w/n_cols;
+	var px_per_row = canv_h/n_rows;
 	
 	var col_i = coord_diff.x / px_per_col;
 	var row_i = coord_diff.y / px_per_row;
@@ -734,8 +739,8 @@ function gradual_diff_list(diff_cells) {
 	
 function cell_to_coord(cell) {
 	
-	var px_per_col = canvas.width/n_cols;
-	var px_per_row = canvas.height/n_rows;
+	var px_per_col = canv_w/n_cols;
+	var px_per_row = canv_h/n_rows;
 	
 	return {x: cell.col*px_per_col, y: cell.row*px_per_row};
 	
@@ -871,9 +876,9 @@ function fill_poly_from_coords(coords) {
 	// /*
 	// returns all the cells
 	// grid conversion variables
-	px_per_col = canvas.width/n_cols;
+	px_per_col = canv_w/n_cols;
 	halfx = px_per_col/2;
-	px_per_row = canvas.height/n_rows;
+	px_per_row = canv_h/n_rows;
 	halfy = px_per_row/2;
 	// get aabb of coords
 	var aabb_coords = aabb_from_coords(coords);

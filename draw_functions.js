@@ -2,17 +2,30 @@
 
 // control canvas prints - setup
 var canvas = document.getElementById("GameCanvas");
+var ctx = canvas.getContext("2d");
 canvas.width  = window.innerWidth;
 canvas.height = window.innerHeight;
-canv_w = canvas.width;
-canv_h = canvas.height;
-ctx = canvas.getContext("2d");
+var canv_w;
+var canv_h;
+
+// preparing tilt
+if (window.innerHeight > window.innerWidth) {
+	// ctx.rotate((20/360)*(2*Math.PI));
+	// ctx.translate(0, -window.innerWidth);
+	canv_w = canvas.height;
+	canv_h = canvas.width;
+	ctx.rotate((90/360)*(2*Math.PI));
+	ctx.translate(0, -window.innerWidth);
+} else {
+	canv_w = canvas.width;
+	canv_h = canvas.height;
+}
 
 // TODO implement scrolling
 
 function clear_canvas() {
 	
-	ctx.clearRect(0, 0, canvas.width, canvas.height);
+	ctx.clearRect(0, 0, canv_w, canv_h);
 	
 }
 
@@ -25,18 +38,18 @@ function set_canvas_bg(color) {
 
 function draw_grid() {
 	
-	for (h = 0; h < canvas.height; h += canvas.height/n_rows) {
+	for (h = 0; h < canv_h; h += canv_h/n_rows) {
 		coords = [
 			{x: 0, y: h},
-			{x: canvas.width, y: h}
+			{x: canv_w, y: h}
 		];
 		draw_poly(coords, "white");
 	}
 	
-	for (v = 0; v < canvas.width; v += canvas.width/n_cols) {
+	for (v = 0; v < canv_w; v += canv_w/n_cols) {
 		coords = [
 			{x: v, y: 0},
-			{x: v, y: canvas.height}
+			{x: v, y: canv_h}
 		];
 		draw_poly(coords, "white");
 	}
@@ -113,7 +126,7 @@ function draw_poly(coords, color) {
 
 function draw_speech_bubble(text, pos) {
 	// get measures from text
-	var font_size = Math.round(0.05*canvas.height);
+	var font_size = Math.round(0.05*canv_h);
 	ctx.font = String(font_size)+"px Arial";
 	var textwidth = ctx.measureText(text).width;
 	var textheight = ctx.measureText(text).height; // does not seem to work correctly
@@ -121,14 +134,14 @@ function draw_speech_bubble(text, pos) {
 	var height = font_size; // incl padding
 	// create coords
 	coords = [];
-	coords.push([pos.x + 0.01*canvas.height, 					pos.y - 0.01*canvas.height]); // fixed
-	coords.push([pos.x + 0.02*canvas.height, 					pos.y - font_size/2]); // fixed
-	coords.push([pos.x + 0.025*canvas.height - width/2,			pos.y - font_size/2]);
-	coords.push([pos.x + 0.025*canvas.height - width/2,			pos.y - font_size/2 - height]);
-	coords.push([pos.x + 0.025*canvas.height + width/2,			pos.y - font_size/2 - height]);
-	coords.push([pos.x + 0.025*canvas.height + width/2,			pos.y - font_size/2]);
-	coords.push([pos.x + 0.03*canvas.height, 					pos.y - font_size/2]); // fixed
-	coords.push([pos.x + 0.01*canvas.height, 					pos.y - 0.01*canvas.height]); // closing - first coord
+	coords.push([pos.x + 0.01*canv_h, 					pos.y - 0.01*canv_h]); // fixed
+	coords.push([pos.x + 0.02*canv_h, 					pos.y - font_size/2]); // fixed
+	coords.push([pos.x + 0.025*canv_h - width/2,			pos.y - font_size/2]);
+	coords.push([pos.x + 0.025*canv_h - width/2,			pos.y - font_size/2 - height]);
+	coords.push([pos.x + 0.025*canv_h + width/2,			pos.y - font_size/2 - height]);
+	coords.push([pos.x + 0.025*canv_h + width/2,			pos.y - font_size/2]);
+	coords.push([pos.x + 0.03*canv_h, 					pos.y - font_size/2]); // fixed
+	coords.push([pos.x + 0.01*canv_h, 					pos.y - 0.01*canv_h]); // closing - first coord
 	// adding colors
 	ctx.strokeStyle="black";
 	ctx.fillStyle="white";
@@ -142,7 +155,7 @@ function draw_speech_bubble(text, pos) {
 	ctx.closePath();
 	ctx.stroke();
 	ctx.fill();
-	draw_canvas_text_flex(text, {x: pos.x + 0.025*canvas.height, y: pos.y - 0.025*canvas.height - 0.01*canvas.height}, "black", 0.9*font_size, align="center");
+	draw_canvas_text_flex(text, {x: pos.x + 0.025*canv_h, y: pos.y - 0.025*canv_h - 0.01*canv_h}, "black", 0.9*font_size, align="center");
 }
 
 function draw_vertex(coord) {
@@ -200,8 +213,8 @@ function draw_canvas_text(string, pos) {
 }
 
 function highlight_cell(cell, color) {
-	var w = canvas.width/n_cols;
-	var h = canvas.height/n_rows;
+	var w = canv_w/n_cols;
+	var h = canv_h/n_rows;
 	draw_rect({x: cell.col*w, y: cell.row*h}, w, h, color);
 }
 
@@ -340,13 +353,13 @@ function draw_cursor(pic, pos) {
 
 function draw_highscores(names, scores) {
 	set_canvas_bg("black");
-	draw_canvas_text_flex("HIGHSCORES", 	{x: canvas.width/2, y: canvas.height/10}, "white", canvas.height/15, align="center");
-	var ypos = 2*(canvas.height/9);
+	draw_canvas_text_flex("HIGHSCORES", 	{x: canv_w/2, y: canv_h/10}, "white", canv_h/15, align="center");
+	var ypos = 2*(canv_h/9);
 	for (let index = 0; index < scores.length; index++) {
-		draw_canvas_text_flex(String(index+1)+".", 	{x: canvas.width/2 - 2*canvas.width/5, y: ypos}, "white", canvas.height/15, align="left");
-		draw_canvas_text_flex(names[index], 		{x: canvas.width/2 - canvas.width/3, y: ypos}, "white", canvas.height/15, align="left");
-		draw_canvas_text_flex(scores[index]+" €", 	{x: canvas.width - (canvas.width/2 - 2*canvas.width/5), y: ypos}, "white", canvas.height/15, align="right");
-		ypos += canvas.height/9;
+		draw_canvas_text_flex(String(index+1)+".", 	{x: canv_w/2 - 2*canv_w/5, y: ypos}, "white", canv_h/15, align="left");
+		draw_canvas_text_flex(names[index], 		{x: canv_w/2 - canv_w/3, y: ypos}, "white", canv_h/15, align="left");
+		draw_canvas_text_flex(scores[index]+" €", 	{x: canv_w - (canv_w/2 - 2*canv_w/5), y: ypos}, "white", canv_h/15, align="right");
+		ypos += canv_h/9;
 	}
-	draw_canvas_text_flex("Click / tap to try again", 	{x: canvas.width/2, y: canvas.height - canvas.height/10}, "white", canvas.height/15, align="center");
+	draw_canvas_text_flex("Click / tap to try again", 	{x: canv_w/2, y: canv_h - canv_h/10}, "white", canv_h/15, align="center");
 }

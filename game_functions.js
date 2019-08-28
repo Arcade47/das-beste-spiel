@@ -147,17 +147,17 @@ function re_init_all_vars(first_start) {
     time_left = 210; // 3.5 minutes seem realistic
     n_floors = 3;
     n_offices_per_floor = 5;
-    floor_height = (canvas.height - 1/6)/5;
+    floor_height = (canv_h - 1/6)/5;
     money = 500000; // realistic start: 500000
     min_awake_dur = 0.05*time_left;
     max_awake_dur = 1.0*time_left;
-    walk_speed = canvas.width/500;
+    walk_speed = canv_w/500;
     cost_of_sleep_per_person_per_frame = 20; // careful: time in frames, not seconds
     boss_productivity_per_person_per_frame = 12; // gain of money
-    scare_tolerance = 0.0625*canvas.width; // how near can coworkers come to boss to not be scared?
+    scare_tolerance = 0.0625*canv_w; // how near can coworkers come to boss to not be scared?
     door_check_dur = 0.1 // seconds to wait in front of each door
-    stairway_w = canvas.width/8; 
-    hallway_w = 5*canvas.width/8;
+    stairway_w = canv_w/8; 
+    hallway_w = 5*canv_w/8;
 
     // physics
     goal_tolerance = walk_speed/2
@@ -186,12 +186,13 @@ function re_init_all_vars(first_start) {
 
 function show_start_screen() {
     set_canvas_bg("black");
-    draw_canvas_text_flex("Ready", {x: canvas.width/2, y: canvas.height/2}, "white", canvas.width/40, align="center");
+    draw_canvas_text_flex("Ready", {x: canv_w/2, y: canv_h/2}, "white", canv_w/40, align="center");
 }
 
 function show_instructions() {
+
     set_canvas_bg("black");
-    if (canvas.height >= 600) {  
+    if (canv_h >= 600) {  
         var lines = [
             "AAAIn der folgenden Aufgabe sollen Sie in 210 Sekunden so viel Geld wie möglich erwirtschaften.",
             "Sie generieren Geld, indem Sie im Büro arbeiten und genügend Mitarbeiter produktiv sind.",
@@ -200,9 +201,9 @@ function show_instructions() {
             "",
             "Wenn Sie keine Fragen mehr haben, klicken / tippen Sie, um zu beginnen."
         ]
-        var ypos = canvas.height/5;
-        var step = canvas.height/10;
-        var size = canvas.width/50;
+        var ypos = canv_h/5;
+        var step = canv_h/10;
+        var size = canv_w/50;
     } else {
         var lines = [
             "In der folgenden Aufgabe sollen Sie in 210",
@@ -217,15 +218,16 @@ function show_instructions() {
             "Wenn Sie keine Fragen mehr haben,",
             "klicken / tippen Sie, um zu beginnen."
         ]
-        var ypos = canvas.height/7.5;
-        var step = (canvas.height - (canvas.height/5))/11;
-        var size = canvas.width/30;
+        var ypos = canv_h/7.5;
+        var step = (canv_h - (canv_h/5))/11;
+        var size = canv_w/30;
     }
-    console.log(canvas.height)
+    console.log(canv_h)
     
     for (let index = 0; index < lines.length; index++) {
         const line = lines[index];
-        draw_canvas_text_flex(line, {x: canvas.width/2, y: ypos}, "white", size, align="center");
+        draw_canvas_text_flex(line, {x: canv_w/2, y: ypos}, "white", size, align="center");
         ypos += step;
     }
+
 }
