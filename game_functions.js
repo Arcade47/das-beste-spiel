@@ -144,7 +144,7 @@ function get_ind_of_highscore(value, scores) {
 function re_init_all_vars(first_start) {
 
     // gameplay-relevant parameters
-    time_left = 210; // 3.5 minutes seem realistic
+    time_left = 10; // 210; // 3.5 minutes seem realistic
     n_floors = 3;
     n_offices_per_floor = 5;
     floor_height = (canv_h - 1/6)/5;
@@ -192,9 +192,9 @@ function show_start_screen() {
 function show_instructions() {
 
     set_canvas_bg("black");
-    if (canv_h >= 600) {  
+    if (canvas.width > canvas.height) {  
         var lines = [
-            "AAAIn der folgenden Aufgabe sollen Sie in 210 Sekunden so viel Geld wie möglich erwirtschaften.",
+            "In der folgenden Aufgabe sollen Sie in 210 Sekunden so viel Geld wie möglich erwirtschaften.",
             "Sie generieren Geld, indem Sie im Büro arbeiten und genügend Mitarbeiter produktiv sind.",
             "Sie können Mitarbeiter produktiv halten, indem Sie auf die entsprechenden Türen klicken.",
             "Beachten Sie aber, dass Sie dann für eine gewisse Zeit nicht im Büro sind.",

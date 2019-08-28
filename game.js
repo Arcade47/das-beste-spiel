@@ -49,7 +49,7 @@ var instructions = true;
 // add event listeners
 // document.addEventListener("mousemove", mousemove);
 document.addEventListener("mousedown", mousedown);
-document.addEventListener('touchend', tap, false);
+document.addEventListener('touchstart', tap, false);
 
 // ask allowance to read/write (for later highscores)
 // window.webkitRequestFileSystem(window.PERSISTENT, 1024*1024, savefile);
@@ -91,6 +91,9 @@ class Timer extends Text {
         var highscores = highscore_list_from_cookie_format(highscores_cf, true);
         var names_cf = getCookie("names");
         var names = highscore_list_from_cookie_format(names_cf, false);
+
+
+
         // put highscore in list (if new or good enough)
         var hs_ind = get_ind_of_highscore(score, highscores);
         if (hs_ind == "no highscore" || score <= 0) {
@@ -100,12 +103,19 @@ class Timer extends Text {
             var name = window.prompt("Well done! Put your name in here: ", "");
             highscores.push(score);
             names.push(name);
+            // canvas.width = 0;
+            // canvas.height = 0;
         } else {
             // put names into highscores
             var name = window.prompt("Well done! Put your name in here: ", "");
             highscores.splice(hs_ind, 0, score);
             names.splice(hs_ind, 0, name);
+            // canvas.width = 0;
+            // canvas.height = 0;
         }
+
+
+
         // display highscores
         draw_highscores(["Nico Adelhoeni", "wsdfasdfasdfsd", "b", "c", "d"], [600000, 12, 1, 1, 1]);
         // store as cookies
@@ -233,8 +243,8 @@ class BankAccount {
         this.balance = start_capital;
         this.color = "lime";
         this.sleeping_n = 0;
-        this.pos = {x: canv_w/2, y: canv_h/6 - canv_h/50};
-        this.size = canv_h/6;
+        this.size = canv_h/10;
+        this.pos = {x: 3*canv_w/7, y: canv_h/(6*2) + this.size/2};
         this.align = "right";
     }
     update() {
