@@ -1,12 +1,12 @@
 // inputs: radius, position on canvas and context
 
-// predefined vars
-var n_cols = 120;//120;
-var n_rows = 40;//40
-var px_per_col = 12;
-var px_per_row = 12;
-var canv_w = 12*n_cols;	
-var canv_h = 12*n_rows;
+// control canvas prints - setup
+var canvas = document.getElementById("GameCanvas");
+canvas.width  = window.innerWidth;
+canvas.height = window.innerHeight;
+canv_w = canvas.width;
+canv_h = canvas.height;
+ctx = canvas.getContext("2d");
 
 // TODO implement scrolling
 
@@ -349,11 +349,3 @@ function draw_highscores(names, scores) {
 	}
 	draw_canvas_text_flex("Press Enter to try again", 	{x: canvas.width/2, y: canvas.height - 30}, "white", 20, align="center");
 }
-
-// control canvas prints - setup
-var canvas = document.getElementById("GameCanvas");
-canvas.width = canv_w;
-canvas.height = canv_h;
-ctx = canvas.getContext("2d");
-
-draw_grid();

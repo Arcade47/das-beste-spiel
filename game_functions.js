@@ -141,21 +141,26 @@ function get_ind_of_highscore(value, scores) {
     }
 }
 
-function re_init_all_vars() {
+function re_init_all_vars(first_start) {
+
+    // physics
+    goal_tolerance = walk_speed/2
+
     // gameplay-relevant parameters
     time_left = 210; // 3.5 minutes seem realistic
     n_floors = 3;
     n_offices_per_floor = 5;
     floor_height = 80;
     money = 500000; // realistic start: 500000
-    min_awake_dur = 2; // 0.05*time_left;
-    max_awake_dur = 3; // 1.0*time_left;
+    min_awake_dur = 0.05*time_left;
+    max_awake_dur = 1.0*time_left;
     walk_speed = 2;
     cost_of_sleep_per_person_per_frame = 20; // careful: time in frames, not seconds
     boss_productivity_per_person_per_frame = 12; // gain of money
     scare_tolerance = 50; // how near can coworkers come to boss to not be scared?
     door_check_dur = 0.1 // seconds to wait in front of each door
-    game_running = true;
+    stairway_w = 85; 
+    hallway_w = 500;
 
     // containers
     coworkers = [];
@@ -166,7 +171,7 @@ function re_init_all_vars() {
     // vars that keep track of game states
     current_pos = {x: 0, y: 0};
     startTime = new Date(); // initialization
-    game_running = true;
+    game_running = !first_start;
 
     // fill containers with initial values
     // create stories

@@ -1,8 +1,7 @@
-// initialization
+// initialization - setup global vars
 
-// parameters
+// game-feel, not game-play related
 var n_steps_in_tread = 6;
-var goal_tolerance = walk_speed/2; // never smaller than 0.5*walk_speed! left and right of goal
 var slogans_enabled = true; // for safety reasons possible to switch it off...
 var slogans = [
     "Mir platzt gleich der Arsch",
@@ -11,33 +10,41 @@ var slogans = [
     "Da krieg ich Puls!"
 ];
 var curse_dur = 2.5; // speech bubble visibility in seconds
+
+// physics
+var goal_tolerance; // never smaller than 0.5*walk_speed! left and right of goal
+
 // gameplay-relevant parameters
-var time_left = 210; // 3 minutes seem realistic
-var n_floors = 3;
-var n_offices_per_floor = 5;
-var floor_height = 80;
-var money = 5000; // realistic start: 500000
-var min_awake_dur = 0.05*time_left;
-var max_awake_dur = 1.0*time_left;
-var walk_speed = 2;
-var cost_of_sleep_per_person_per_frame = 20; // careful: time in frames, not seconds
-var boss_productivity_per_person_per_frame = 12; // gain of money
-var scare_tolerance = 50; // how near can coworkers come to boss to not be scared?
-var door_check_dur = 0.1 // seconds to wait in front of each door
+var time_left; // 3.5 minutes seem realistic
+var n_floors;
+var n_offices_per_floor;
+var floor_height;
+var money; // realistic start: 500000
+var min_awake_dur;
+var max_awake_dur;
+var walk_speed;
+var cost_of_sleep_per_person_per_frame; // careful: time in frames, not seconds
+var boss_productivity_per_person_per_frame; // gain of money
+var scare_tolerance; // how near can coworkers come to boss to not be scared?
+var door_check_dur; // seconds to wait in front of each door
+var stairway_w; 
+var hallway_w;
 
 // containers
-var coworkers = [];
-var stories = [];
-var doors = [];
-var doors_path = []; // gets emptied when a door is reached
+var coworkers;
+var stories;
+var doors;
+var doors_path; // gets emptied when a door is reached
 var boss_door; // has special properties (or rather reduced functions)
 var boss; // gets instantiated in Story class (already placed in correct door :)
 
 // vars that keep track of game states
-var current_pos = {x: 0, y: 0};
-var startTime = new Date(); // initialization
+var current_pos;
+var startTime;
 var endTime, secondsElapsed;
-var game_running = false;
+var game_running;
+
+// only shown in beginning, not when new level
 var start_screen = true;
 var instructions = false;
 
@@ -290,13 +297,13 @@ class Mover {
 
 class Building {
     constructor() {
-        this.stairway_width = 85;
-        this.hallway_length = 500;
+        this.stairway_width = stairway_w;
+        this.hallway_length = hallway_w;
         this.n_floors = n_floors;
         this.height = floor_height;
         // set canvas dimensions!
-        canvas.width = 2*this.stairway_width + this.hallway_length + 140;
-        canvas.height = n_floors*floor_height + 140;
+        // canvas.width = 2*this.stairway_width + this.hallway_length + 140;
+        // canvas.height = n_floors*floor_height + 140;
         // derived vars
         this.stairway1_start_x = canvas.width/2 - this.hallway_length/2 - this.stairway_width;
         this.stairway2_start_x = canvas.width/2 + this.hallway_length/2;
@@ -956,14 +963,7 @@ class DaBoss extends Person {
     }
 }
 
-// fill containers with initial values
-// create stories
-var building = new Building(); // also initializes people
-// instantiate text displays after building because building changes canvas width
-var bank_account = new BankAccount(money);
-var timer = new Timer(time_left);
-init_stories(n_floors); // seperate function because Story extends Building --> too much recursion otherwise
-init_coworker_types(min_awake_dur, max_awake_dur); // initialize properties of coworkers
+re_init_all_vars();
 
 // main update function
 
