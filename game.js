@@ -42,10 +42,8 @@ var boss; // gets instantiated in Story class (already placed in correct door :)
 var current_pos;
 var startTime;
 var endTime, secondsElapsed;
-var game_running;
-
-// only shown in beginning, not when new level
-var start_screen = true;
+var game_running = false;
+var start_screen = false;
 var instructions = false;
 
 // add event listeners
@@ -1036,6 +1034,28 @@ function draw_all() {
 
 // event listener functions
 
+function start_game() {
+if (start_screen) {
+            start_screen = false;
+            instructions = true;
+            show_instructions();
+        }
+        if (!instructions && !game_running) {
+            // re-init all vars
+            re_init_all_vars();
+            // start updating again
+            update();
+        }
+if (instructions) {
+            instructions = false;
+            game_running = true;
+            // re-init all vars
+            re_init_all_vars();
+            // start updating again
+            update();
+        }
+}
+
 function keydown(e) {
     if (e.key == "Enter") {
         if (start_screen) {
@@ -1065,6 +1085,7 @@ function mousemove(e) {
     current_pos = getXY_exact(e);
 }
 function mousedown(e) {
+    
     if (e.which == 1) { // LMB
         for (let index = 0; index < doors.length; index++) {
             if (doors[index].clicked_on(current_pos)) {
