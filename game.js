@@ -11,9 +11,6 @@ var slogans = [
 ];
 var curse_dur = 2.5; // speech bubble visibility in seconds
 
-// physics
-var goal_tolerance; // never smaller than 0.5*walk_speed! left and right of goal
-
 // gameplay-relevant parameters
 var time_left; // 3.5 minutes seem realistic
 var n_floors;
@@ -30,6 +27,9 @@ var door_check_dur; // seconds to wait in front of each door
 var stairway_w; 
 var hallway_w;
 
+// physics
+var goal_tolerance; // never smaller than 0.5*walk_speed! left and right of goal
+
 // containers
 var coworkers;
 var stories;
@@ -37,19 +37,19 @@ var doors;
 var doors_path; // gets emptied when a door is reached
 var boss_door; // has special properties (or rather reduced functions)
 var boss; // gets instantiated in Story class (already placed in correct door :)
+var grass;
 
 // vars that keep track of game states
 var current_pos;
 var startTime;
 var endTime, secondsElapsed;
 var game_running = false;
-var start_screen = false;
-var instructions = false;
+var instructions = true;
 
 // add event listeners
-document.addEventListener("keydown", keydown);
-document.addEventListener("mousemove", mousemove);
+// document.addEventListener("mousemove", mousemove);
 document.addEventListener("mousedown", mousedown);
+document.addEventListener('touchend', tap, false);
 
 // ask allowance to read/write (for later highscores)
 // window.webkitRequestFileSystem(window.PERSISTENT, 1024*1024, savefile);
@@ -75,8 +75,8 @@ class Text {
 
 class Timer extends Text {
     constructor(start_time) {
-        super(start_time, {x: canvas.width - 20, y: 50});// {x:canvas.width/2 - 30, y:50}
-        this.size = 50;
+        super(start_time, {x: canvas.width - 20, y: canvas.height/6 - canvas.height/50});// {x:canvas.width/2 - 30, y:50}
+        this.size = canvas.height/6;
         this.label = start_time;
         this.second = 1;
         this.align = "right";
@@ -107,7 +107,7 @@ class Timer extends Text {
             names.splice(hs_ind, 0, name);
         }
         // display highscores
-        draw_highscores(names, highscores);
+        draw_highscores(["Nico Adelhoeni", "wsdfasdfasdfsd", "b", "c", "d"], [600000, 12, 1, 1, 1]);
         // store as cookies
         var highscores_new, names_new;
         if (highscores.length > 5) {
@@ -143,13 +143,13 @@ class CoworkerStateText extends Text {
     constructor(label, pos, color, speed) {
         super(label, pos);
         this.color = color; // lightblue
-        this.max_dist = 30; // units it is allowed to float
+        this.max_dist = 0.075*canvas.height; // units it is allowed to float
         var startx = this.pos.x;
         var starty = this.pos.y;
         this.start_pos = {x: startx, y: starty};//{x: pos.x, y: pos.y}; // make copy, else linked!
         this.start_size = this.size;
         this.speed = speed; // px per frame in each axis (0.2 for sleep)
-        this.size_increase = 1.5; // size increase per frame
+        this.size_increase = 0.002*canvas.height; // size increase per frame
     }
     distance() {
         // distance to start
@@ -180,7 +180,7 @@ class CoworkerStateText extends Text {
 
 class SleepText extends CoworkerStateText {
     constructor(pos) {
-        super("z", pos, "lightblue", 0.2);
+        super("z", pos, "lightblue", 0.0001*canvas.width);
     }
 }
 
@@ -199,7 +199,7 @@ class TalkText extends Text {
         this.color = "black";
         this.pos_list = [];
         this.seconds_elapsed = 0;
-        this.size = 25;
+        this.size = 0.05*canvas.height;
         this.door = door;
         this.max_texts = 2;
         this.bla_dur = 0.7;
@@ -233,8 +233,9 @@ class BankAccount {
         this.balance = start_capital;
         this.color = "lime";
         this.sleeping_n = 0;
-        this.pos = {x:30, y:50};
-        this.size = 50;
+        this.pos = {x: canvas.width/2, y: canvas.height/6 - canvas.height/50};
+        this.size = canvas.height/6;
+        this.align = "right";
     }
     update() {
         // reduce money by amount of sleeping people
@@ -279,7 +280,7 @@ class BankAccount {
         game_running = false;
     }
     render() {
-        draw_canvas_text_flex(String(this.balance).concat(" €"), this.pos, this.color, this.size, "left")
+        draw_canvas_text_flex(String(this.balance).concat(" €"), this.pos, this.color, this.size, this.align)
     }
 }
 
@@ -309,9 +310,9 @@ class Building {
     }
     render() {
         // stairways boxes
-        draw_rect_outline({x: this.stairway1_start_x, y: canvas.height - this.building_height},
+        draw_rect_outline({x: this.stairway1_start_x, y: canvas.height - this.building_height - 0.5*grass.height},
             this.stairway_width, this.building_height, "black", "white");
-        draw_rect_outline({x: this.stairway2_start_x, y: canvas.height - this.building_height},
+        draw_rect_outline({x: this.stairway2_start_x, y: canvas.height - this.building_height - 0.5*grass.height},
             this.stairway_width, this.building_height, "black", "white");
     }
 }
@@ -322,10 +323,11 @@ class Stairs extends Building {
         this.coords = [{x: start_x, y: start_y}];
         this.step_length = this.stairway_width/n_steps_in_tread;
         this.step_height = this.height/2/n_steps_in_tread;
+
         if (side == 0) { // left hand stairway
             let new_x = this.coords[this.coords.length-1].x;
             // move to left first
-            while (new_x > end_x) {
+            while (new_x > end_x + 1) {
                 new_x = this.coords[this.coords.length-1].x - this.step_length;
                 this.coords.push({x: new_x, y: this.coords[this.coords.length-1].y});
                 let new_y = this.coords[this.coords.length-1].y + this.step_height;
@@ -340,6 +342,7 @@ class Stairs extends Building {
                 this.coords.push({x: this.coords[this.coords.length-1].x, y: new_y});
             }
         }
+
         if (side == 1) { // right hand stairway --> here is error
             // move to right first
             let new_x = this.coords[this.coords.length-1].x;
@@ -359,6 +362,7 @@ class Stairs extends Building {
                 this.coords.push({x: this.coords[this.coords.length-1].x, y: new_y});
             }
         }
+
     }
     render() {
         draw_path(this.coords, "black")
@@ -376,21 +380,21 @@ class Story extends Building { // here also doors are added
         this.start_y = canvas.height - this.floor_n*this.height; // only hallway
         // derived vars - stairs
         this.stairs1 = new Stairs(0, this.stairway1_start_x + this.stairway_width, 
-            this.stairway1_start_x, this.start_y - this.height);
+            this.stairway1_start_x, this.start_y - this.height - 0.5*grass.height);
         this.stairs2 = new Stairs(1, this.stairway2_start_x, 
-            this.stairway2_start_x + this.stairway_width, this.start_y - this.height);
+            this.stairway2_start_x + this.stairway_width, this.start_y - this.height - 0.5*grass.height);
         // derived vars - door coordinates
         let boss_placed = false;
         for (let index = 0; index < this.n_doors; index++) {
             // don't add boss door to list (first in topmost floor)
             if (this.floor_n == n_floors - 1 && !boss_placed) {
             // if (this.floor_n == n_floors - 1 && index == this.n_doors-1) {
-                boss_door = new Door(index, this.start_x, this.start_y, -1, this.floor_n);
+                boss_door = new Door(index, this.start_x, this.start_y - 0.5*grass.height, -1, this.floor_n);
                 boss_door.color = "brown";
                 boss = new DaBoss(boss_door.goal, boss_door);
                 boss_placed = true;
             } else {
-                var new_door = new Door(index, this.start_x, this.start_y, doors.length, this.floor_n);
+                var new_door = new Door(index, this.start_x, this.start_y - 0.5*grass.height, doors.length, this.floor_n);
                 // spawn the correct coworker in working state
                 new_door.coworkers_in_room.push(new CoWorker(new_door));
                 doors.push(new_door);
@@ -400,7 +404,7 @@ class Story extends Building { // here also doors are added
     render() {
         // stairs, walls and doors
         // 1. hallway walls
-        draw_rect_outline({x: this.start_x, y: this.start_y - this.height},
+        draw_rect_outline({x: this.start_x, y: this.start_y - this.height - grass.height/2},
             this.hallway_length, this.height, "black", "white");
         // 2. doors --> rendered separately in draw_all (unique list)
         // 3. stairs (only if not top story)
@@ -415,8 +419,8 @@ class Door extends Building { // "extends Story" leads to recursion problems unf
     constructor(door_n, start_x, start_y, ind, floor) {
         super();
         this.door_n = door_n; // number of door on this floor
-        this.door_width = 24;
-        this.door_height = 40;
+        this.door_width = this.hallway_length/(n_offices_per_floor*3); //24;
+        this.door_height = 0.6*floor_height;
         this.start_x = start_x; // hallway, not door!
         this.start_y = start_y - this.door_height;
         this.working_color = "orange";
@@ -499,7 +503,8 @@ class Door extends Building { // "extends Story" leads to recursion problems unf
             }
         }
         if (this.labelled) {
-            draw_canvas_text_flex(this.num, {x: this.x1 + this.door_width/2, y: this.y1}, "red", 40, "center");
+            var padding = ((floor_height - this.door_height) - canvas.height/15)/2;
+            draw_canvas_text_flex(this.num, {x: this.x1 + this.door_width/2, y: this.y1 - padding}, "red", canvas.height/15, "center");
         }
     }
     render_path_doors() { // delete, only debugging...
@@ -513,10 +518,10 @@ class Person extends Mover {
     constructor() {
         super();
         this.pos = {x: canvas.width/2 - 60, y: canvas.height/2};
-        this.head_r = 5;
-        this.height = 30;
-        this.width = 2 + 2*this.head_r;
-        this.body_l = 12;
+        this.head_r = floor_height/20;
+        this.height = floor_height/2.5 - (floor_height/2.5)/5;
+        this.width = 2.75*this.head_r;
+        this.body_l = floor_height/8;
         this.arm_rel_pos_body = 0.2; // percentage on body line where arms start
         this.head_color = "white";
         this.walk_speed = walk_speed;
@@ -555,7 +560,7 @@ class Person extends Mover {
     }
     get_story_y(building) {
         var story = this.get_story();
-        return canvas.height - building.height*story;
+        return canvas.height - building.height*story - 0.5*grass.height;
     }
     stairway_turn() {
         // just switch p1 and p3
@@ -662,7 +667,8 @@ class Person extends Mover {
         // first check whether in stairway; if yes, finish walking program
         if (this.in_stairway) {
             this.stairway_walking(dest, dir, vert_dir, building);
-        } else if (dest.goal.y != this.pos.y) { // needs to go to stairs
+        } else if (Math.round(dest.goal.y) != Math.round(this.pos.y)) { // needs to go to stairs
+            console.log(dest.goal.y, this.pos.y)
             // walk to stairs or up the stairs
             if (this.pos.x >= building.stairway1_start_x + building.stairway_width &&
                 this.pos.x <= building.stairway2_start_x) { // in hallway
@@ -681,7 +687,7 @@ class Person extends Mover {
         // exact match (within tolerance) of position
         if (this.pos.x >= dest.goal.x - this.goal_tolerance &&
             this.pos.x <= dest.goal.x + this.goal_tolerance &&
-            this.pos.y == dest.goal.y) {
+            Math.round(this.pos.y) == Math.round(dest.goal.y)) {
             this.door_reached(dest);
         }
     }
@@ -961,7 +967,17 @@ class DaBoss extends Person {
     }
 }
 
-re_init_all_vars();
+class Grass {
+    constructor() {
+        this.width = canvas.width;
+        this.height = canvas.height/6;
+    }
+    render() {
+        draw_rect({x: 0, y: canvas.height - this.height}, this.width, this.height, "green");
+    }
+}
+
+// re_init_all_vars(true);
 
 // main update function
 
@@ -1002,8 +1018,8 @@ function draw_all() {
 
     // setup
     set_canvas_bg("blue");
-    draw_rect({x: 0, y: 0}, canvas.width, 80, "black");
-
+    draw_rect({x: 0, y: 0}, canvas.width, canvas.height/6, "black");
+    grass.render();
     building.render();
     bank_account.render();
     timer.render();
@@ -1034,76 +1050,98 @@ function draw_all() {
 
 // event listener functions
 
-function start_game() {
-if (start_screen) {
-            start_screen = false;
-            instructions = true;
-            show_instructions();
-        }
-        if (!instructions && !game_running) {
-            // re-init all vars
-            re_init_all_vars();
-            // start updating again
-            update();
-        }
-if (instructions) {
-            instructions = false;
-            game_running = true;
-            // re-init all vars
-            re_init_all_vars();
-            // start updating again
-            update();
-        }
-}
-
-function keydown(e) {
-    if (e.key == "Enter") {
-        if (start_screen) {
-            start_screen = false;
-            instructions = true;
-            show_instructions();
-        }
-        if (!instructions && !game_running) {
-            // re-init all vars
-            re_init_all_vars();
-            // start updating again
-            update();
-        }
-    }
-    if (e.code == "Space") {
-        if (instructions) {
-            instructions = false;
-            game_running = true;
-            // re-init all vars
-            re_init_all_vars();
-            // start updating again
-            update();
-        }
-    }
-}
-function mousemove(e) {
-    current_pos = getXY_exact(e);
-}
 function mousedown(e) {
+
+    // different functions depending on game state
+    current_pos = getXY_exact(e);
     
-    if (e.which == 1) { // LMB
-        for (let index = 0; index < doors.length; index++) {
-            if (doors[index].clicked_on(current_pos)) {
-                // first make sure the same door was not clicked on twice.
-                let next_door = false;
-                for (let index2 = 0; index2 < doors_path.length; index2++) {
-                    if (doors[index].same_door(doors_path[index2])) {
-                        next_door = true;
+    if (game_running) {
+
+        if (e.which == 1) { // LMB
+            for (let index = 0; index < doors.length; index++) {
+                if (doors[index].clicked_on(current_pos)) {
+                    // first make sure the same door was not clicked on twice.
+                    let next_door = false;
+                    for (let index2 = 0; index2 < doors_path.length; index2++) {
+                        if (doors[index].same_door(doors_path[index2])) {
+                            next_door = true;
+                        }
                     }
+                    if (next_door) {
+                        continue;
+                    }
+                    // not clicked on twice --> label the door
+                    doors_path.push(doors[index]);
+                    doors[index].label(doors_path.length);
                 }
-                if (next_door) {
-                    continue;
-                }
-                // not clicked on twice --> label the door
-                doors_path.push(doors[index]);
-                doors[index].label(doors_path.length);
             }
         }
+
+    } else {
+
+        if (!instructions && !game_running) {
+            // re-init all vars
+            re_init_all_vars();
+            // start updating again
+            update();
+        } else if (instructions) {
+            instructions = false;
+            game_running = true;
+            // re-init all vars
+            re_init_all_vars();
+            // start updating again
+            update();
+        }
+
+    }
+}
+function tap(e) {
+    
+    // make sure there is only one touch
+    if (e.touches.length == 1) {
+
+        current_pos = getXY_exact(e.touches[0]);
+
+        if (game_running) {
+
+            if (e.which == 1) { // LMB
+                for (let index = 0; index < doors.length; index++) {
+                    if (doors[index].clicked_on(current_pos)) {
+                        // first make sure the same door was not clicked on twice.
+                        let next_door = false;
+                        for (let index2 = 0; index2 < doors_path.length; index2++) {
+                            if (doors[index].same_door(doors_path[index2])) {
+                                next_door = true;
+                            }
+                        }
+                        if (next_door) {
+                            continue;
+                        }
+                        // not clicked on twice --> label the door
+                        doors_path.push(doors[index]);
+                        doors[index].label(doors_path.length);
+                    }
+                }
+            }
+    
+        } else {
+    
+            if (!instructions && !game_running) {
+                // re-init all vars
+                re_init_all_vars();
+                // start updating again
+                update();
+            } else if (instructions) {
+                instructions = false;
+                game_running = true;
+                // re-init all vars
+                re_init_all_vars();
+                // start updating again
+                update();
+            }
+    
+        }
+
     }
 }
 
@@ -1111,4 +1149,4 @@ function savefile() {
 
 }
 
-show_start_screen();
+show_instructions();

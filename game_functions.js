@@ -143,24 +143,24 @@ function get_ind_of_highscore(value, scores) {
 
 function re_init_all_vars(first_start) {
 
-    // physics
-    goal_tolerance = walk_speed/2
-
     // gameplay-relevant parameters
     time_left = 210; // 3.5 minutes seem realistic
     n_floors = 3;
     n_offices_per_floor = 5;
-    floor_height = 80;
+    floor_height = (canvas.height - 1/6)/5;
     money = 500000; // realistic start: 500000
     min_awake_dur = 0.05*time_left;
     max_awake_dur = 1.0*time_left;
-    walk_speed = 2;
+    walk_speed = canvas.width/500;
     cost_of_sleep_per_person_per_frame = 20; // careful: time in frames, not seconds
     boss_productivity_per_person_per_frame = 12; // gain of money
-    scare_tolerance = 50; // how near can coworkers come to boss to not be scared?
+    scare_tolerance = 0.0625*canvas.width; // how near can coworkers come to boss to not be scared?
     door_check_dur = 0.1 // seconds to wait in front of each door
-    stairway_w = 85; 
-    hallway_w = 500;
+    stairway_w = canvas.width/8; 
+    hallway_w = 5*canvas.width/8;
+
+    // physics
+    goal_tolerance = walk_speed/2
 
     // containers
     coworkers = [];
@@ -179,29 +179,53 @@ function re_init_all_vars(first_start) {
     // instantiate text displays after building because building changes canvas width
     bank_account = new BankAccount(money);
     timer = new Timer(time_left);
+    grass = new Grass();
     init_stories(n_floors); // seperate function because Story extends Building --> too much recursion otherwise
     init_coworker_types(min_awake_dur, max_awake_dur); // initialize properties of coworkers
 }
 
 function show_start_screen() {
     set_canvas_bg("black");
-    draw_canvas_text_flex("Ready", {x: canvas.width/2, y: canvas.height/2}, "white", 20, align="center");
+    draw_canvas_text_flex("Ready", {x: canvas.width/2, y: canvas.height/2}, "white", canvas.width/40, align="center");
 }
 
 function show_instructions() {
-    set_canvas_bg("black");  
-    var lines = [
-        "In der folgenden Aufgabe sollen Sie in 210 Sekunden so viel Geld wie möglich erwirtschaften.",
-        "Sie generieren Geld, indem Sie im Büro arbeiten und genügend Mitarbeiter produktiv sind.",
-        "Sie können Mitarbeiter produktiv halten, indem Sie auf die entsprechenden Türen klicken.",
-        "Beachten Sie aber, dass Sie dann für eine gewisse Zeit nicht im Büro sind.",
-        "",
-        "Wenn Sie keine Fragen mehr haben, drücken Sie die Leertaste um zu beginnen."
-    ]
-    var ypos = 100;
+    set_canvas_bg("black");
+    if (canvas.height >= 600) {  
+        var lines = [
+            "In der folgenden Aufgabe sollen Sie in 210 Sekunden so viel Geld wie möglich erwirtschaften.",
+            "Sie generieren Geld, indem Sie im Büro arbeiten und genügend Mitarbeiter produktiv sind.",
+            "Sie können Mitarbeiter produktiv halten, indem Sie auf die entsprechenden Türen klicken.",
+            "Beachten Sie aber, dass Sie dann für eine gewisse Zeit nicht im Büro sind.",
+            "",
+            "Wenn Sie keine Fragen mehr haben, klicken / tippen Sie, um zu beginnen."
+        ]
+        var ypos = canvas.height/5;
+        var step = canvas.height/10;
+        var size = canvas.width/50;
+    } else {
+        var lines = [
+            "In der folgenden Aufgabe sollen Sie in 210",
+            "Sekunden so viel Geld wie möglich erwirtschaften.",
+            "Sie generieren Geld, indem Sie im Büro arbeiten",
+            "und genügend Mitarbeiter produktiv sind.",
+            "Sie können Mitarbeiter produktiv halten,",
+            "indem Sie auf die entsprechenden Türen klicken.",
+            "Beachten Sie aber, dass Sie dann für",
+            "eine gewisse Zeit nicht im Büro sind.",
+            "",
+            "Wenn Sie keine Fragen mehr haben,",
+            "klicken / tippen Sie, um zu beginnen."
+        ]
+        var ypos = canvas.height/7.5;
+        var step = (canvas.height - (canvas.height/5))/11;
+        var size = canvas.width/30;
+    }
+    console.log(canvas.height)
+    
     for (let index = 0; index < lines.length; index++) {
         const line = lines[index];
-        draw_canvas_text_flex(line, {x: canvas.width/2, y: ypos}, "white", 15, align="center");
-        ypos += 30;
+        draw_canvas_text_flex(line, {x: canvas.width/2, y: ypos}, "white", size, align="center");
+        ypos += step;
     }
 }

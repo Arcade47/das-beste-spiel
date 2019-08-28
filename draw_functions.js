@@ -113,21 +113,22 @@ function draw_poly(coords, color) {
 
 function draw_speech_bubble(text, pos) {
 	// get measures from text
-	ctx.font = "15px Arial";
+	var font_size = Math.round(0.05*canvas.height);
+	ctx.font = String(font_size)+"px Arial";
 	var textwidth = ctx.measureText(text).width;
 	var textheight = ctx.measureText(text).height; // does not seem to work correctly
 	var width = textwidth + 20;
-	var height = 35;
+	var height = font_size; // incl padding
 	// create coords
 	coords = [];
-	coords.push([pos.x + 10, 					pos.y - 10]); // fixed
-	coords.push([pos.x + 20, 					pos.y - 30]); // fixed
-	coords.push([pos.x + 25 - width/2,		 	pos.y - 30]);
-	coords.push([pos.x + 25 - width/2,			pos.y - 30 - height]);
-	coords.push([pos.x + 25 + width/2,			pos.y - 30 - height]);
-	coords.push([pos.x + 25 + width/2,			pos.y - 30]);
-	coords.push([pos.x + 30, 					pos.y - 30]); // fixed
-	coords.push([pos.x + 10, 					pos.y - 10]); // closing - first coord
+	coords.push([pos.x + 0.01*canvas.height, 					pos.y - 0.01*canvas.height]); // fixed
+	coords.push([pos.x + 0.02*canvas.height, 					pos.y - font_size/2]); // fixed
+	coords.push([pos.x + 0.025*canvas.height - width/2,			pos.y - font_size/2]);
+	coords.push([pos.x + 0.025*canvas.height - width/2,			pos.y - font_size/2 - height]);
+	coords.push([pos.x + 0.025*canvas.height + width/2,			pos.y - font_size/2 - height]);
+	coords.push([pos.x + 0.025*canvas.height + width/2,			pos.y - font_size/2]);
+	coords.push([pos.x + 0.03*canvas.height, 					pos.y - font_size/2]); // fixed
+	coords.push([pos.x + 0.01*canvas.height, 					pos.y - 0.01*canvas.height]); // closing - first coord
 	// adding colors
 	ctx.strokeStyle="black";
 	ctx.fillStyle="white";
@@ -141,7 +142,7 @@ function draw_speech_bubble(text, pos) {
 	ctx.closePath();
 	ctx.stroke();
 	ctx.fill();
-	draw_canvas_text_flex(text, {x: pos.x + 25, y: pos.y - 25 - 0.5*height}, "black", 15, align="center");
+	draw_canvas_text_flex(text, {x: pos.x + 0.025*canvas.height, y: pos.y - 0.025*canvas.height - 0.01*canvas.height}, "black", 0.9*font_size, align="center");
 }
 
 function draw_vertex(coord) {
@@ -339,13 +340,13 @@ function draw_cursor(pic, pos) {
 
 function draw_highscores(names, scores) {
 	set_canvas_bg("black");
-	draw_canvas_text_flex("HIGHSCORES", 	{x: canvas.width/2, y: 40}, "white", 20, align="center");
-	var ypos = 100;
+	draw_canvas_text_flex("HIGHSCORES", 	{x: canvas.width/2, y: canvas.height/10}, "white", canvas.height/15, align="center");
+	var ypos = 2*(canvas.height/9);
 	for (let index = 0; index < scores.length; index++) {
-		draw_canvas_text_flex(String(index+1)+".", 	{x: canvas.width/2 - 180, y: ypos}, "white", 20, align="left");
-		draw_canvas_text_flex(names[index], 		{x: canvas.width/2 - 160, y: ypos}, "white", 20, align="left");
-		draw_canvas_text_flex(scores[index]+" €", 	{x: canvas.width - 180, y: ypos}, "white", 20, align="right");
-		ypos += 30;
+		draw_canvas_text_flex(String(index+1)+".", 	{x: canvas.width/2 - 2*canvas.width/5, y: ypos}, "white", canvas.height/15, align="left");
+		draw_canvas_text_flex(names[index], 		{x: canvas.width/2 - canvas.width/3, y: ypos}, "white", canvas.height/15, align="left");
+		draw_canvas_text_flex(scores[index]+" €", 	{x: canvas.width - (canvas.width/2 - 2*canvas.width/5), y: ypos}, "white", canvas.height/15, align="right");
+		ypos += canvas.height/9;
 	}
-	draw_canvas_text_flex("Press Enter to try again", 	{x: canvas.width/2, y: canvas.height - 30}, "white", 20, align="center");
+	draw_canvas_text_flex("Click / tap to try again", 	{x: canvas.width/2, y: canvas.height - canvas.height/10}, "white", canvas.height/15, align="center");
 }
