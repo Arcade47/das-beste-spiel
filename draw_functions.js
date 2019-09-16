@@ -1,3 +1,10 @@
+// test: communicate w/ php
+
+// var str = "test test test";
+
+
+
+
 // inputs: radius, position on canvas and context
 
 // control canvas prints - setup
@@ -5,20 +12,41 @@ var canvas = document.getElementById("GameCanvas");
 var ctx = canvas.getContext("2d");
 canvas.width  = window.innerWidth;
 canvas.height = window.innerHeight;
-var canv_w;
-var canv_h;
+var canv_w = canvas.width;
+var canv_h = canvas.height;
+var horizontal_screen = true;
+var vertical_screen = false;
+
+function tilt_canvas() {
+
+	if (window.innerHeight > window.innerWidth) {
+		// tilt to vertical
+		// canvas.width = window.innerWidth;
+		// canvas.height = window.innerHeight;
+		ctx.rotate((90/360)*(2*Math.PI));
+		ctx.translate(0, -window.innerWidth);
+		/*
+		console.log("tilt to vertical")
+		ctx.rotate((90/360)*(2*Math.PI));
+		ctx.translate(0, -window.innerWidth);
+		vertical_screen = true;
+		horizontal_screen = false;
+		// */
+	} else if (window.innerHeight < window.innerWidth) { // vertical_screen
+		// tilt to horizontal
+		// canvas.width = window.innerWidth;
+		// canvas.height = window.innerHeight;
+		ctx.rotate((0)*(2*Math.PI)); // absolute coordinates
+		// horizontal_screen = true;
+		// vertical_screen = false;
+	}
+}
 
 // preparing tilt
 if (window.innerHeight > window.innerWidth) {
-	// ctx.rotate((20/360)*(2*Math.PI));
-	// ctx.translate(0, -window.innerWidth);
+	tilt_canvas();
 	canv_w = canvas.height;
 	canv_h = canvas.width;
-	ctx.rotate((90/360)*(2*Math.PI));
-	ctx.translate(0, -window.innerWidth);
-} else {
-	canv_w = canvas.width;
-	canv_h = canvas.height;
 }
 
 // TODO implement scrolling
@@ -190,8 +218,8 @@ function draw_debug_text(string) {
 	ctx.font = "40px Arial";
 	ctx.strokeStyle="red";
 	ctx.fillStyle="red";
-	ctx.strokeText(string, 10, 50);
-	ctx.fillText(string, 10, 50); 
+	ctx.strokeText(string, canvas.width/4, canvas.height/2);
+	ctx.fillText(string, canvas.width/4, canvas.height/2); 
 	
 }
 
@@ -351,14 +379,16 @@ function draw_cursor(pic, pos) {
 	
 }
 
-function draw_highscores(names, scores) {
+function draw_highscores(pair) {
 	set_canvas_bg("black");
 	draw_canvas_text_flex("HIGHSCORES", 	{x: canv_w/2, y: canv_h/10}, "white", canv_h/15, align="center");
 	var ypos = 2*(canv_h/9);
-	for (let index = 0; index < scores.length; index++) {
+	for (let index = 0; index < pair.length; index++) {
+		var splitted = pair[index].split("|a|");
 		draw_canvas_text_flex(String(index+1)+".", 	{x: canv_w/2 - 2*canv_w/5, y: ypos}, "white", canv_h/15, align="left");
-		draw_canvas_text_flex(names[index], 		{x: canv_w/2 - canv_w/3, y: ypos}, "white", canv_h/15, align="left");
-		draw_canvas_text_flex(scores[index]+" €", 	{x: canv_w - (canv_w/2 - 2*canv_w/5), y: ypos}, "white", canv_h/15, align="right");
+		console.log(splitted)
+		draw_canvas_text_flex(splitted[0], 		{x: canv_w/2 - canv_w/3, y: ypos}, "white", canv_h/15, align="left");
+		draw_canvas_text_flex(splitted[1]+" €", 	{x: canv_w - (canv_w/2 - 2*canv_w/5), y: ypos}, "white", canv_h/15, align="right");
 		ypos += canv_h/9;
 	}
 	draw_canvas_text_flex("Click / tap to try again", 	{x: canv_w/2, y: canv_h - canv_h/10}, "white", canv_h/15, align="center");

@@ -36,7 +36,7 @@ function getXY(e) {
 	
 }
 
-function getXY_exact(e) {
+function getXY_exact(e, xscale=1, yscale=1) {
 	
 	// return exact position relative to canvas (for physics)
 	if (canvas.height > canvas.width) {
@@ -46,7 +46,7 @@ function getXY_exact(e) {
 		var x_exact = mouse_pos_relative_to_canvas(e).x;
 		var y_exact = mouse_pos_relative_to_canvas(e).y;
 	}
-	return {x: x_exact, y: y_exact};
+	return {x: x_exact/xscale, y: y_exact/yscale};
 	
 }
 

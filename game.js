@@ -10,6 +10,8 @@ var slogans = [
     "Da krieg ich Puls!"
 ];
 var curse_dur = 2.5; // speech bubble visibility in seconds
+var xscale = 1;
+var yscale = 1;
 
 // gameplay-relevant parameters
 var time_left; // 3.5 minutes seem realistic
@@ -49,7 +51,7 @@ var instructions = true;
 // add event listeners
 // document.addEventListener("mousemove", mousemove);
 document.addEventListener("mousedown", mousedown);
-document.addEventListener('touchstart', tap, false);
+document.addEventListener('touchstart', tap);
 
 // ask allowance to read/write (for later highscores)
 // window.webkitRequestFileSystem(window.PERSISTENT, 1024*1024, savefile);
@@ -82,55 +84,88 @@ class Timer extends Text {
         this.align = "right";
     }
     highscore() {
-        // delete_cookie("highscores");
-        // delete_cookie("names");
-        console.log('highscore');
         var score = bank_account.balance;
         // read out highscores
-        var highscores_cf = getCookie("highscores");
-        var highscores = highscore_list_from_cookie_format(highscores_cf, true);
-        var names_cf = getCookie("names");
-        var names = highscore_list_from_cookie_format(names_cf, false);
 
 
 
         // put highscore in list (if new or good enough)
-        var hs_ind = get_ind_of_highscore(score, highscores);
-        if (hs_ind == "no highscore" || score <= 0) {
-            // do nothing
-        } else if (hs_ind == "append") {
-            // put names into highscores
+
+        // var hs_ind = get_ind_of_highscore(score, highscores);
+
+        var best_five_array;
+        var xmlhttp = new XMLHttpRequest();
+        xmlhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                var best_five = this.responseText;
+                best_five_array = best_five.split("|a||b|")[0]; // eliminate empty rows
+                best_five_array = best_five_array.split("|b|");
+                best_five_array.pop();
+            }
+        }
+        xmlhttp.open("GET", "load_highscores.php", false);
+        xmlhttp.send();
+
+        // check if in top five:
+        var hs_ind = get_ind_of_highscore(score, get_scores(best_five_array));
+
+        if (hs_ind == "append") {
+
+            // append to database
+
             var name = window.prompt("Well done! Put your name in here: ", "");
-            highscores.push(score);
-            names.push(name);
-            // canvas.width = 0;
-            // canvas.height = 0;
+            name.replace("|", ""); // make sure splitting works correctly...
+            if (name.length > 25) {
+                name = name.slice(0,24);
+            }
+
+            var xmlhttp = new XMLHttpRequest();
+            xmlhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    var best_five = this.responseText;
+                    best_five_array = best_five.split("|a||b|")[0]; // eliminate empty rows
+                    best_five_array = best_five_array.split("|b|");
+                    best_five_array.pop();
+                }
+            }
+            xmlhttp.open("GET", "add_to_highscores.php?q="+name+"|"+String(score), false);
+            xmlhttp.send();
+
+            // reload scores from database
+
+            var xmlhttp = new XMLHttpRequest();
+            xmlhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    var best_five = this.responseText;
+                    best_five_array = best_five.split("|a||b|")[0]; // eliminate empty rows
+                    best_five_array = best_five_array.split("|b|");
+                    best_five_array.pop();
+                }
+            }
+            xmlhttp.open("GET", "load_highscores.php", false);
+            xmlhttp.send();
+
+            // display highscores
+            draw_highscores(best_five_array);
+
         } else {
-            // put names into highscores
-            var name = window.prompt("Well done! Put your name in here: ", "");
-            highscores.splice(hs_ind, 0, score);
-            names.splice(hs_ind, 0, name);
-            // canvas.width = 0;
-            // canvas.height = 0;
+
+            // display highscores
+            draw_highscores(best_five_array);
+
         }
 
+        
+
+        // highscores.push(score);
+        // names.push(name);
 
 
         // display highscores
-        draw_highscores(["Nico Adelhoeni", "wsdfasdfasdfsd", "b", "c", "d"], [600000, 12, 1, 1, 1]);
-        // store as cookies
-        var highscores_new, names_new;
-        if (highscores.length > 5) {
-            highscores_new = highscores.splice(0, 4);
-            names_new = names.splice(0, 4);
-        } else {
-            highscores_new = highscores;
-            names_new = names;
-        }
-        highscores_cf = highscore_list_to_cookie_format(highscores_new);
-        names_cf = highscore_list_to_cookie_format(names_new);
-        setCookie("highscores", highscores_cf);
-        setCookie("names", names_cf);
+        // draw_highscores(best_five_array);
+
+
+
     }
     update(seconds_elapsed) { // assuming a timer
         this.second -= seconds_elapsed;
@@ -221,7 +256,6 @@ class TalkText extends Text {
             var randaddx = Math.random()*this.door.door_width - 0.5*this.door.door_width;
             var randaddy = Math.random()*this.door.door_height - 0.5*this.door.door_height;
             var new_pos = {x: this.start_pos.x + randaddx, y: this.start_pos.y + randaddy};
-            // console.log(new_pos);
             // always keep maximum of 3 texts
             if (this.pos_list.length >= this.max_texts) {
                 this.pos_list.shift();
@@ -554,8 +588,9 @@ class Person extends Mover {
         this.sleeping = false;
         this.talking = false;
         this.scared = false;
-        // debug
-        this.debug_dest = {x: 0, y: 0};
+
+        this.dest = new Door(-1, 0, 0, -1, -1);
+        this.side = 0; // middle
     }
     get_story() { // mostly when in stairway
         for (let index = 0; index < stories.length; index++) {
@@ -608,10 +643,10 @@ class Person extends Mover {
         this.stairway_step_2 = {x: vec2_norm.x*this.walk_speed, y: vec2_norm.y*this.walk_speed};
         this.in_stairway = true;
     }
-    stairway_walking(dest, side, vert_dir, building) {
+    stairway_walking() {
         // maybe person needs to take a turn...
         // necessary if y of third stairway point not closer to dest than first stairway point
-        if (Math.abs(this.stairway_points[0].y - dest.goal.y) < Math.abs(this.stairway_points[2].y - dest.goal.y)) {
+        if (Math.abs(this.stairway_points[0].y - this.dest.goal.y) < Math.abs(this.stairway_points[2].y - this.dest.goal.y)) {
             this.stairway_turn();
         }
         // keep walking on first vec as long as distance is less than stairs
@@ -665,20 +700,19 @@ class Person extends Mover {
         }
     }
     walk_route(building, dest) {
+        this.dest = dest;
         // note: in overall update function already checked this there are doors in path list
         // choose the direction where boss should walk
         // choose closest flight of stairs
-        this.debug_dest = dest;
-        var dir = this.choose_closest_stairs(this.pos.x, dest.goal.x);
+        var dir = this.choose_closest_stairs(this.pos.x, this.dest.goal.x);
         // get vertical direction
         var vert_dir = 0;
-        if (dest.goal.y > this.pos.y) { vert_dir = 1; }
-        else if (dest.goal.y < this.pos.y) { vert_dir = -1; }
+        if (this.dest.goal.y > this.pos.y) { vert_dir = 1; }
+        else if (this.dest.goal.y < this.pos.y) { vert_dir = -1; }
         // first check whether in stairway; if yes, finish walking program
         if (this.in_stairway) {
-            this.stairway_walking(dest, dir, vert_dir, building);
-        } else if (Math.round(dest.goal.y) != Math.round(this.pos.y)) { // needs to go to stairs
-            console.log(dest.goal.y, this.pos.y)
+            this.stairway_walking();
+        } else if (Math.round(this.dest.goal.y) != Math.round(this.pos.y)) { // needs to go to stairs
             // walk to stairs or up the stairs
             if (this.pos.x >= building.stairway1_start_x + building.stairway_width &&
                 this.pos.x <= building.stairway2_start_x) { // in hallway
@@ -688,18 +722,74 @@ class Person extends Mover {
                 // this.start_stairway_animation(vert_dir, dir, building);
             }
         }
-        else if (dest.goal.x + this.goal_tolerance > this.pos.x) { // needs to walk right
+        else if (this.dest.goal.x + this.goal_tolerance > this.pos.x) { // needs to walk right
             this.pos.x += this.walk_speed;
         }
-        else if (dest.goal.x - this.goal_tolerance < this.pos.x) { // needs to walk left
+        else if (this.dest.goal.x - this.goal_tolerance < this.pos.x) { // needs to walk left
             this.pos.x -= this.walk_speed;
         }
         // exact match (within tolerance) of position
-        if (this.pos.x >= dest.goal.x - this.goal_tolerance &&
-            this.pos.x <= dest.goal.x + this.goal_tolerance &&
-            Math.round(this.pos.y) == Math.round(dest.goal.y)) {
-            this.door_reached(dest);
+        if (this.pos.x >= this.dest.goal.x - this.goal_tolerance &&
+            this.pos.x <= this.dest.goal.x + this.goal_tolerance &&
+            Math.round(this.pos.y) == Math.round(this.dest.goal.y)) {
+            this.door_reached(this.dest);
         }
+    }
+    rescale(new_w, new_h) {
+
+        // appearance adjustment
+        this.head_r = floor_height/20;
+        this.height = floor_height/2.5 - (floor_height/2.5)/5;
+        this.width = 2.75*this.head_r;
+        this.body_l = floor_height/8;
+        this.arm_rel_pos_body = 0.2; // percentage on body line where arms start
+        this.walk_speed = walk_speed;
+        // derived vars
+        this.decap_height = this.height - 2*this.head_r;
+        this.leg_height = this.decap_height - this.body_l;
+        this.arm_joint_height = this.leg_height + (1 - this.arm_rel_pos_body)*this.body_l;
+        this.goal_tolerance = this.walk_speed/2;
+
+        // position rescale
+        // gradual y adjustment if in stairway
+        // gradual x adjustment if not in office
+        // preparation
+        var old_hallway_w = 5*canv_w/8;
+        var old_hallway_start_x = (canv_w - old_hallway_w)/2;
+        var old_hallway_end_x = old_hallway_start_x + old_hallway_w;
+        var new_hallway_start = (new_w - hallway_w)/2;
+        var old_stairway_w = canv_w/8;
+        // TODO check if this.dest.goal adjusted already
+        var dir = this.choose_closest_stairs(this.pos.x, this.dest.goal.x);
+        // distinction based on dir
+        if (dir < 0) { var old_stairway_start_x = old_hallway_start_x + dir*old_stairway_w; }
+        else { var old_stairway_start_x = old_hallway_end_x; }
+        if (dir < 0) { var new_stairway_start_x = new_hallway_start + dir*stairway_w; }
+        else { var new_stairway_start_x = new_hallway_start + hallway_w; }
+
+        if (this.in_office) {
+            this.pos = {x: this.door.goal.x, y: this.door.goal.y};
+        } else if (!this.stairway_walking) {
+            this.pos.y = this.get_story_y(building);
+            // x derivation
+            var subtr_x = this.pos.x - old_hallway_start_x;
+            var new_rel_x = (subtr_x/old_hallway_w)*hallway_w;
+            this.pos.x = new_rel_x + new_hallway_start;
+        } else {
+            // y derivation
+            var new_y = (this.pos.y/canv_h)*new_h;
+            this.pos.y = new_y;
+            // x derivation
+            var subtr_x = this.pos.x - old_stairway_start_x;
+            var new_rel_x = (subtr_x/old_stairway_w)*stairway_w;
+            this.pos.x = new_rel_x + new_stairway_start_x;
+            var vert_dir = 0;
+            // set the new stairway points
+            if (this.dest.goal.y > this.pos.y) { vert_dir = 1; }
+            else if (this.dest.goal.y < this.pos.y) { vert_dir = -1; }
+            this.set_stairway_points(vert_dir, dir, building);
+        }
+
     }
     render() {
         // placeholder: strichmaennchen
@@ -881,6 +971,7 @@ class DaBoss extends Person {
         this.pos = pos;
         this.head_color = "red";
         this.floor = door.floor;
+        this.door = door;
         // initialize state variables
         this.working = true;
         this.checking = false; // small time to wait in front of door
@@ -982,6 +1073,10 @@ class Grass {
         this.width = canv_w;
         this.height = canv_h/6;
     }
+    rescale(new_w, new_h) {
+        this.width = new_w;
+        this.height = new_h/6;
+    }
     render() {
         draw_rect({x: 0, y: canv_h - this.height}, this.width, this.height, "green");
     }
@@ -1020,19 +1115,47 @@ function update() {
         // keep simulation going if not game over
         requestAnimationFrame(update);
     }
+    
 }
 
 // main draw function
 
 function draw_all() {
 
-    // setup
+    // check if tilt necessary
+    // if ((window.innerWidth > window.innerHeight && vertical_screen) 
+    // || (window.innerWidth < window.innerHeight && horizontal_screen)) {
+    //     tilt_canvas();
+    // }
+
+    var long_dim_current = Math.max(window.innerHeight, window.innerWidth);
+    var short_dim_current = Math.min(window.innerHeight, window.innerWidth);
+
+    canvas.width = window.innerWidth; // long_dim_current;// 
+    canvas.height = window.innerHeight; // short_dim_current;// 
+
+    console.log(canvas.width, canvas.height, window.innerWidth, window.innerHeight);
+
+    xscale = window.innerWidth/canv_w; // long_dim_current/canv_w;// 
+    yscale = window.innerHeight/canv_h; // short_dim_current/canv_h;// 
+    // ctx.scale(xscale, yscale);
+    ctx.setTransform(xscale, 0, 0, yscale, 0, 0);
+    tilt_canvas();
+    // ctx.setTransform(xscale, 0, 0, yscale, 0, 0);
+    // canvas.style.width = long_dim_current;
+    // canvas.style.height = short_dim_current;
+    // ctx.rotate((45/360)*(2*Math.PI));
+
+    // sky
     set_canvas_bg("blue");
+    // score bar on top of screen
     draw_rect({x: 0, y: 0}, canv_w, canv_h/6, "black");
-    grass.render();
-    building.render();
     bank_account.render();
     timer.render();
+    // grass
+    grass.render();
+    // building
+    building.render();
     for (let i=0; i<stories.length; i++) {
         let story = stories[i];
         story.render();
@@ -1045,16 +1168,7 @@ function draw_all() {
         let coworker = coworkers[i];
         coworker.render();
     }
-    // path doors rendering only for debugging
-    // for (let i=0; i<doors_path.length; i++) {
-    //     doors_path[i].render_path_doors();
-    // }
     boss.render();
-
-    // TODO delete testdraw
-    // if (!boss.in_office) {
-    //     draw_speech_bubble(slogans[2], {x: boss.pos.x, y: boss.pos.y - boss.height});
-    // }
 
 }
 
@@ -1063,7 +1177,7 @@ function draw_all() {
 function mousedown(e) {
 
     // different functions depending on game state
-    current_pos = getXY_exact(e);
+    current_pos = getXY_exact(e, xscale, yscale);
     
     if (game_running) {
 
@@ -1114,7 +1228,7 @@ function tap(e) {
     // make sure there is only one touch
     if (e.touches.length == 1) {
 
-        current_pos = getXY_exact(e.touches[0]);
+        current_pos = getXY_exact(e.touches[0], xscale, yscale);
 
         if (game_running) {
 

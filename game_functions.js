@@ -122,29 +122,44 @@ function highscore_list_from_cookie_format(hs_list, tonum) {
     }
 }
 
+function get_scores(pairs) {
+    var scores = [];
+    for (let index = 0; index < pairs.length; index++) {
+        const pair = pairs[index];
+        scores.push(pair.split("|a|")[1]);
+    }
+    return scores;
+}
+
 function get_ind_of_highscore(value, scores) {
     // gets index of already ordered list
 
-    for (let index = 0; index < scores.length; index++) {
-        const score = scores[index];
-        if (index > 4) {
-            break;
-        }
-        if (value > score) {
-            return index;
-        }
-    }
-    if (scores.length < 5) { // worst score but still room on the list
-        return "append";
-    } else {
+    // for (let index = 0; index < scores.length; index++) {
+    //     const score = scores[index];
+    //     if (index > 4) {
+    //         break;
+    //     }
+    //     if (value > score) {
+    //         return index;
+    //     }
+    // }
+
+    if (value <= 0) {
         return "no highscore";
+    } else if (scores.length < 5) { // worst score but still room on the list
+        return "append";
+    } else if (scores[4] >= value) {
+        return "no highscore";
+    } else {
+        return "append";
     }
+
 }
 
 function re_init_all_vars(first_start) {
 
     // gameplay-relevant parameters
-    time_left = 10; // 210; // 3.5 minutes seem realistic
+    time_left = 210; // 3.5 minutes seem realistic
     n_floors = 3;
     n_offices_per_floor = 5;
     floor_height = (canv_h - 1/6)/5;
@@ -222,7 +237,6 @@ function show_instructions() {
         var step = (canv_h - (canv_h/5))/11;
         var size = canv_w/30;
     }
-    console.log(canv_h)
     
     for (let index = 0; index < lines.length; index++) {
         const line = lines[index];
