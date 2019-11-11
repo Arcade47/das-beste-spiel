@@ -1,5 +1,8 @@
 // initialization - setup global vars
 
+var game_state = "choose_mode"; // choose_mode instructions game highscores
+var best_five_array; // for highscores
+
 // game-feel, not game-play related
 var n_steps_in_tread = 6;
 var slogans_enabled = true; // for safety reasons possible to switch it off...
@@ -14,6 +17,7 @@ var xscale = 1;
 var yscale = 1;
 
 // gameplay-relevant parameters
+var cost_per_door;
 var time_left; // 3.5 minutes seem realistic
 var n_floors;
 var n_offices_per_floor;
@@ -32,7 +36,7 @@ var hallway_w;
 // physics
 var goal_tolerance; // never smaller than 0.5*walk_speed! left and right of goal
 
-// containers
+// containers and class instances (objects)
 var coworkers;
 var stories;
 var doors;
@@ -45,13 +49,16 @@ var grass;
 var current_pos;
 var startTime;
 var endTime, secondsElapsed;
-var game_running = false;
-var instructions = true;
+
+var skycolor = "blue";
 
 // add event listeners
 // document.addEventListener("mousemove", mousemove);
 document.addEventListener("mousedown", mousedown);
-document.addEventListener('touchstart', tap);
+document.addEventListener('touchstart', tap); // TODO: find out whether single quotes necessary here
+window.addEventListener('orientationchange', resizeCanvas, false);
+window.addEventListener('resize', resizeCanvas, false);
+
 
 // ask allowance to read/write (for later highscores)
 // window.webkitRequestFileSystem(window.PERSISTENT, 1024*1024, savefile);
@@ -75,6 +82,39 @@ class Text {
     }
 }
 
+class Opportunity {
+    constructor(type) {
+        this.type = type;
+    }
+    clicked_on(pos) {
+        if (pos.x >= this.x1 && pos.x <= this.x2 && pos.y >= this.y1 && pos.y <= this.y2) {
+            return true;
+        } // else
+        return false;
+    }
+    render() {
+        if (this.type == "door") {
+            // plural
+            var add = "";
+            if (building.n_floors > 1) add = "S";
+            // get x position
+            var x_pos = building.stairway2_start_x + building.stairway_width + canv_w/12;
+            // get y position
+            var start_y = canv_h - building.building_height - 0.5*grass.height;
+            var end_y = start_y + building.building_height;
+            var y_pos = start_y + (end_y - start_y)/2;
+            draw_textbox(["BÜRO"+add, "KAUFEN", String((cost_per_door*building.n_floors)/1000)+" K"], {x: x_pos, y: y_pos});
+        }
+        if (this.type == "floor") {
+            // get x position
+            var x_pos = canv_w/2;
+            // get y position
+            var y_pos = canv_h - building.building_height - 0.5*grass.height - canv_h/40 - canv_h/25;
+            draw_textbox(["ETAGE KAUFEN "+String((cost_per_door*n_offices_per_floor)/1000)+" K"], {x: x_pos, y: y_pos}, 3);
+        }
+    }
+}
+
 class Timer extends Text {
     constructor(start_time) {
         super(start_time, {x: canv_w - 20, y: canv_h/6 - canv_h/50});// {x:canv_w/2 - 30, y:50}
@@ -87,13 +127,10 @@ class Timer extends Text {
         var score = bank_account.balance;
         // read out highscores
 
-
-
         // put highscore in list (if new or good enough)
 
         // var hs_ind = get_ind_of_highscore(score, highscores);
 
-        var best_five_array;
         var xmlhttp = new XMLHttpRequest();
         xmlhttp.onreadystatechange = function() {
             if (this.readyState == 4 && this.status == 200) {
@@ -145,26 +182,10 @@ class Timer extends Text {
             xmlhttp.open("GET", "load_highscores.php", false);
             xmlhttp.send();
 
-            // display highscores
-            draw_highscores(best_five_array);
-
-        } else {
-
-            // display highscores
-            draw_highscores(best_five_array);
-
         }
 
-        
-
-        // highscores.push(score);
-        // names.push(name);
-
-
-        // display highscores
-        // draw_highscores(best_five_array);
-
-
+        // change state
+        game_state = "highscores";
 
     }
     update(seconds_elapsed) { // assuming a timer
@@ -174,10 +195,6 @@ class Timer extends Text {
             this.second = 1;
         }
         if (this.label <= 0) {
-            // stop game loop
-            game_running = false;
-            // highscore
-            // this.highscore();
             // game over
             bank_account.gameover();
         }
@@ -275,6 +292,11 @@ class TalkText extends Text {
 class BankAccount {
     constructor(start_capital) {
         this.balance = start_capital;
+        this.opportunities = [];
+        this.prev_balance = start_capital; // to get change velocity
+        this.rate = 1;
+        this.rad = get_rad_for_arrow(this.rate);
+        this.maxrate;
         this.color = "lime";
         this.sleeping_n = 0;
         this.size = canv_h/10;
@@ -282,6 +304,8 @@ class BankAccount {
         this.align = "right";
     }
     update() {
+        this.maxrate = boss_productivity_per_person_per_frame*coworkers.length;
+        this.prev_balance = this.balance;
         // reduce money by amount of sleeping people
         this.sleeping_n = 0;
         for (let index = 0; index < coworkers.length; index++) {
@@ -311,20 +335,51 @@ class BankAccount {
             this.color = "lime";
         }
 
+        // get rate and rad for arrow
+        this.rate = get_rate(this.balance - this.prev_balance, -this.maxrate, this.maxrate);
+        var goal_rad = get_rad_for_arrow(this.rate);
+        // ensure gradual movement of arrow
+        if (round_digits(goal_rad, 2) < round_digits(this.rad, 2)) {
+            this.rad -= 0.005;
+        }
+        if (round_digits(goal_rad, 2) > round_digits(this.rad, 2)) {
+            this.rad += 0.005;
+        }
+
+        // draw buying opportunities
+        this.opportunities = []; // reset
+        // 1. door(s)
+        if (this.balance > cost_per_door*building.n_floors) {
+            this.opportunities.push(new Opportunity("door"))
+        }
+        // 2. floor
+        if (this.balance > cost_per_door*n_offices_per_floor) {
+            this.opportunities.push(new Opportunity("floor"))
+        }
+
+        // check if clicked on opportunities
+        for (let index = 0; index < this.opportunities.length; index++) {
+            const opp = this.opportunities[index];
+            opp.render();
+        }
+
         // set game over
         if (this.balance <= 0) {
             this.gameover();
-            this.game_running = false;
         }
 
     }
     gameover() {
         // this.balance = "GAME OVER   ".concat(this.balance);
         timer.highscore();
-        game_running = false;
     }
     render() {
-        draw_canvas_text_flex(String(this.balance).concat(" €"), this.pos, this.color, this.size, this.align)
+        draw_canvas_text_flex(String(this.balance).concat(" €"), this.pos, this.color, this.size, this.align);
+        draw_arrow(this.rad);
+        for (let index = 0; index < this.opportunities.length; index++) {
+            const opp = this.opportunities[index];
+            opp.render();
+        }
     }
 }
 
@@ -487,7 +542,7 @@ class Door extends Building { // "extends Story" leads to recursion problems unf
         this.goal = {x: this.x1 + this.door_width/2, y: this.y2}; // feet center coordinate
         this.center = {x: this.x1 + this.door_width/2, y: this.y1 + this.height/2};
         // for rendering
-        this.z = new SleepText({x: this.center.x, y: this.center.y - 30}); // for rendering sleeping
+        this.z = new SleepText({x: this.center.x, y: this.center.y - 0.25*this.door_height}); // for rendering sleeping
         this.bla = new TalkText(this); // for rendering talking
     }
     clicked_on(pos) { // returns bool
@@ -525,7 +580,16 @@ class Door extends Building { // "extends Story" leads to recursion problems unf
     render() {
         draw_rect_outline({x: this.door_x_pos, y: this.start_y},
             this.door_width, this.door_height, "black", this.color);
-        
+    }
+    render_text() {
+        // separate function so that no doors occlude sleep Zs
+        // if any coworkers in door are talking: show talking animation
+        for (let index = 0; index < this.coworkers_in_room.length; index++) {
+            if (this.coworkers_in_room[index].talking) {
+                this.bla.render();
+                break;
+            }
+        }
         // if any coworkers in door are sleeping: show sleeping animation
         for (let index = 0; index < this.coworkers_in_room.length; index++) {
             if (this.coworkers_in_room[index].sleeping) {
@@ -539,23 +603,18 @@ class Door extends Building { // "extends Story" leads to recursion problems unf
                 this.color = this.working_color;
             }
         }
-        // if any coworkers in door are talking: show talking animation
-        for (let index = 0; index < this.coworkers_in_room.length; index++) {
-            if (this.coworkers_in_room[index].talking) {
-                this.bla.render();
-                break;
-            }
-        }
+    }
+    render_walk_path() {
         if (this.labelled) {
             var padding = ((floor_height - this.door_height) - canv_h/15)/2;
             draw_canvas_text_flex(this.num, {x: this.x1 + this.door_width/2, y: this.y1 - padding}, "red", canv_h/15, "center");
         }
     }
-    render_path_doors() { // delete, only debugging...
-        draw_rect_outline({x: this.door_x_pos, y: this.start_y},
-            this.door_width, this.door_height, "black", "yellow");
-        draw_circ(10, this.goal, "red");
-    }
+    // render_path_doors() { // delete, only debugging...
+    //     draw_rect_outline({x: this.door_x_pos, y: this.start_y},
+    //         this.door_width, this.door_height, "black", "yellow");
+    //     draw_circ(10, this.goal, "red");
+    // }
 }
 
 class Person extends Mover {
@@ -899,6 +958,12 @@ class CoWorker extends Person {
         this.scared = true;
     }
     update(seconds_elapsed) {
+        // debug
+        // if (this.scared) {
+        //     this.head_color = "lightblue";
+        // } else {
+        //     this.head_color = "white";
+        // }
         // set current story
         this.floor = this.get_story();
         // set walking speed and adjust tolerance
@@ -955,14 +1020,15 @@ class CoWorker extends Person {
         if (!this.in_office) {
             Person.prototype.render.call(this);
         }
+
     }
-    debug_render() {
-        if (this.type == 1) {
-            draw_rect_outline({x: this.match_coworker.door.door_x_pos, y: this.match_coworker.door.start_y},
-                this.match_coworker.door.door_width, this.match_coworker.door.door_height, "black", "yellow");
-            draw_circ(10, this.match_coworker.door.goal, "red");
-        }
-    }
+    // debug_render() {
+    //     if (this.type == 1) {
+    //         draw_rect_outline({x: this.match_coworker.door.door_x_pos, y: this.match_coworker.door.start_y},
+    //             this.match_coworker.door.door_width, this.match_coworker.door.door_height, "black", "yellow");
+    //         draw_circ(10, this.match_coworker.door.goal, "red");
+    //     }
+    // }
 }
 
 class DaBoss extends Person {
@@ -1042,19 +1108,37 @@ class DaBoss extends Person {
             } else { // no doors left --> walk back to office
                 this.walk_route(building, boss_door);
             }
-            // scare coworkers in hallway
-            if (!this.in_office) {
-                for (let index = 0; index < coworkers.length; index++) {
-                    // given that on same floor and meeting outside office
-                    if (this.pos.y == coworkers[index].pos.y && !coworkers[index].in_office) {
-                        if (Math.abs(this.pos.x - coworkers[index].pos.x) < scare_tolerance) {
-                            coworkers[index].controlled();
-                        }
-                    }
-                    // TODO: otherwise: check in hallway
-                }
-            }
         }
+
+        // scare coworkers in hallway
+        if (!this.in_office) {
+            for (let index = 0; index < coworkers.length; index++) {
+                // given that meeting outside office
+                if (!coworkers[index].in_office) {
+                    if (get_distance(this.pos, coworkers[index].pos) < scare_tolerance) {
+                        coworkers[index].controlled();
+                    }
+                }
+                // if (this.pos.y == coworkers[index].pos.y && !coworkers[index].in_office) {
+                //     if (Math.abs(this.pos.x - coworkers[index].pos.x) < scare_tolerance) {
+                //         coworkers[index].controlled();
+                //     }
+                // }
+            }
+            // // otherwise, check in stairway
+            // if (this.in_stairway) {
+            //     var boss_stairway_side = this.choose_closest_stairs(this.pos.x, this.pos.x);
+            //     for (let index = 0; index < coworkers.length; index++) {
+            //         const cw = coworkers[index];
+            //         // given that on same floor and meeting outside office
+            //         var cw_stairway_side = cw.choose_closest_stairs(cw.pos.x, cw.pos.x);
+            //         if (cw_stairway_side == boss_stairway_side && cw.in_stairway) {
+            //             coworkers[index].controlled();
+            //         }
+            //     }
+            // }
+        }
+
     }
     render() {
         // only render boss when he is not working
@@ -1087,34 +1171,37 @@ class Grass {
 // main update function
 
 function update() {
-    // keep track of time in seconds
-    endTime = new Date();
-    secondsElapsed = (endTime - startTime)/1000;
-    startTime = new Date();
 
-    // set state of boss and update
-    boss.update(building, doors_path, boss_door, secondsElapsed);
+    // only update if ingame
+    if (game_state == "game") {
+        // keep track of time in seconds
+        endTime = new Date();
+        secondsElapsed = (endTime - startTime)/1000;
+        startTime = new Date();
 
-    // set state of coworkers (dependent on seconds passed)
-    for (let index = 0; index < coworkers.length; index++) {
-        coworkers[index].update(secondsElapsed);
+        // set state of boss and update
+        boss.update(building, doors_path, boss_door, secondsElapsed);
+
+        // set state of coworkers (dependent on seconds passed)
+        for (let index = 0; index < coworkers.length; index++) {
+            coworkers[index].update(secondsElapsed);
+        }
+
+        // set state of doors (i.e. sleeping or talking text animations step forward)
+        for (let index = 0; index < doors.length; index++) {
+            doors[index].update(secondsElapsed);
+        }
+
+        // update bank account and timer
+        bank_account.update();
+        timer.update(secondsElapsed);
+
     }
 
-    // set state of doors (i.e. sleeping or talking text animations step forward)
-    for (let index = 0; index < doors.length; index++) {
-        doors[index].update(secondsElapsed);
-    }
-
-    // update bank account and timer
-    bank_account.update();
-    timer.update(secondsElapsed);
-
-    if (game_running) {
-        // after all updates: draw everything
-        draw_all();
-        // keep simulation going if not game over
-        requestAnimationFrame(update);
-    }
+    // after all updates: draw everything
+    draw_all();
+    // keep simulation going
+    requestAnimationFrame(update);
     
 }
 
@@ -1122,53 +1209,50 @@ function update() {
 
 function draw_all() {
 
-    // check if tilt necessary
-    // if ((window.innerWidth > window.innerHeight && vertical_screen) 
-    // || (window.innerWidth < window.innerHeight && horizontal_screen)) {
-    //     tilt_canvas();
-    // }
-
-    var long_dim_current = Math.max(window.innerHeight, window.innerWidth);
-    var short_dim_current = Math.min(window.innerHeight, window.innerWidth);
-
-    canvas.width = window.innerWidth; // long_dim_current;// 
-    canvas.height = window.innerHeight; // short_dim_current;// 
-
-    console.log(canvas.width, canvas.height, window.innerWidth, window.innerHeight);
-
-    xscale = window.innerWidth/canv_w; // long_dim_current/canv_w;// 
-    yscale = window.innerHeight/canv_h; // short_dim_current/canv_h;// 
-    // ctx.scale(xscale, yscale);
-    ctx.setTransform(xscale, 0, 0, yscale, 0, 0);
-    tilt_canvas();
-    // ctx.setTransform(xscale, 0, 0, yscale, 0, 0);
-    // canvas.style.width = long_dim_current;
-    // canvas.style.height = short_dim_current;
-    // ctx.rotate((45/360)*(2*Math.PI));
-
-    // sky
-    set_canvas_bg("blue");
-    // score bar on top of screen
-    draw_rect({x: 0, y: 0}, canv_w, canv_h/6, "black");
-    bank_account.render();
-    timer.render();
-    // grass
-    grass.render();
-    // building
-    building.render();
-    for (let i=0; i<stories.length; i++) {
-        let story = stories[i];
-        story.render();
+    if (game_state == "choose_mode") {
+        start_screen();
     }
-    boss_door.render();
-    for (let i=0; i<doors.length; i++) {
-        doors[i].render();
+
+    if (game_state == "instructions") {
+        show_instructions();
     }
-    for (let i=0; i<coworkers.length; i++) {
-        let coworker = coworkers[i];
-        coworker.render();
+
+    if (game_state == "game") {
+        // sky
+        set_canvas_bg(skycolor);
+        // score bar on top of screen
+        draw_rect({x: 0, y: 0}, canv_w, canv_h/6, "black");
+        timer.render();
+        // grass
+        grass.render();
+        // building
+        building.render();
+        for (let i=0; i<stories.length; i++) {
+            let story = stories[i];
+            story.render();
+        }
+        boss_door.render();
+        for (let i=0; i<doors.length; i++) {
+            doors[i].render();
+        }
+        for (let i=0; i<doors.length; i++) {
+            doors[i].render_text();
+        }
+        for (let i=0; i<doors.length; i++) {
+            doors[i].render_walk_path();
+        }
+        boss.render();
+        for (let i=0; i<coworkers.length; i++) {
+            let coworker = coworkers[i];
+            coworker.render();
+        }
+        bank_account.render();
     }
-    boss.render();
+
+    if (game_state == "highscores") {
+        // display highscores
+        draw_highscores(best_five_array);
+    }
 
 }
 
@@ -1176,10 +1260,37 @@ function draw_all() {
 
 function mousedown(e) {
 
-    // different functions depending on game state
-    current_pos = getXY_exact(e, xscale, yscale);
+    if (game_state == "choose_mode") {
+
+        current_pos = getXY_exact(e, xscale, yscale);
+
+        if (e.which == 1) { // LMB
+            // check at which height --> which menu option is clicked
+
+            var ypos = canv_h/5 + canv_h/20;
+            var step = canv_h/7;
+
+            if (current_pos.x >= 0 && current_pos.x <= canv_w) {
+                if (current_pos.y >= ypos + 1*step && current_pos.y <= ypos + 2*step) {
+                    game_state = "instructions"
+                }
+                if (current_pos.y >= ypos + 2*step && current_pos.y <= ypos + 3*step) {
+                    re_init_all_vars();
+                    game_state = "game"
+                }
+            }
+
+        }
+
+    }
+
+    else if (game_state == "instructions") {
+        game_state = "choose_mode";
+    }
     
-    if (game_running) {
+    else if (game_state == "game") {
+
+        current_pos = getXY_exact(e, xscale, yscale);
 
         if (e.which == 1) { // LMB
             for (let index = 0; index < doors.length; index++) {
@@ -1201,80 +1312,24 @@ function mousedown(e) {
             }
         }
 
-    } else {
-
-        if (!instructions && !game_running) {
-            // re-init all vars
-            re_init_all_vars();
-            // start updating again
-            update();
-        } else if (instructions) {
-            instructions = false;
-            game_running = true;
-
-            // ctx.rotate((90/360)*(2*Math.PI));
-	        // ctx.translate(0, -window.innerWidth);
-
-            // re-init all vars
-            re_init_all_vars();
-            // start updating again
-            update();
-        }
-
+    }
+    
+    else if (game_state == "highscores") {
+        // re-init all vars
+        re_init_all_vars();
+        game_state = "game";
     }
 }
+
 function tap(e) {
     
     // make sure there is only one touch
     if (e.touches.length == 1) {
 
-        current_pos = getXY_exact(e.touches[0], xscale, yscale);
-
-        if (game_running) {
-
-            if (e.which == 1) { // LMB
-                for (let index = 0; index < doors.length; index++) {
-                    if (doors[index].clicked_on(current_pos)) {
-                        // first make sure the same door was not clicked on twice.
-                        let next_door = false;
-                        for (let index2 = 0; index2 < doors_path.length; index2++) {
-                            if (doors[index].same_door(doors_path[index2])) {
-                                next_door = true;
-                            }
-                        }
-                        if (next_door) {
-                            continue;
-                        }
-                        // not clicked on twice --> label the door
-                        doors_path.push(doors[index]);
-                        doors[index].label(doors_path.length);
-                    }
-                }
-            }
-    
-        } else {
-    
-            if (!instructions && !game_running) {
-                // re-init all vars
-                re_init_all_vars();
-                // start updating again
-                update();
-            } else if (instructions) {
-                instructions = false;
-                game_running = true;
-                // re-init all vars
-                re_init_all_vars();
-                // start updating again
-                update();
-            }
-    
-        }
+        // same functions as when mouse clicked
+        mousedown(e);
 
     }
 }
 
-function savefile() {
-
-}
-
-show_instructions();
+update();

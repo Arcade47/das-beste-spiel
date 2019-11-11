@@ -10,7 +10,7 @@ function set_canvas_bg(color) {
 	ctx.fillRect(0,0,canvas.width, canvas.height);
 }
 
-function draw_line(coords, color) {
+function draw_line(coords, color) {x    
 	ctx.beginPath();
 	ctx.lineWidth="3";
 	ctx.strokeStyle=color;

@@ -46,7 +46,17 @@ function getXY_exact(e, xscale=1, yscale=1) {
 		var x_exact = mouse_pos_relative_to_canvas(e).x;
 		var y_exact = mouse_pos_relative_to_canvas(e).y;
 	}
-	return {x: x_exact/xscale, y: y_exact/yscale};
+	
+	var return_x = x_exact/xscale;
+	var return_y = y_exact/yscale;
+
+	// mind that canvas is transformed (translated) in css
+
+	return_x += canv_w/2;
+	return_y += canv_h/2;
+	// return_x += window.innerHeight/2;
+	// return_y += window.innerWidth/2;
+	return {x: return_x, y: return_y};
 	
 }
 
@@ -946,4 +956,56 @@ function set_ball_opts(p, r, id) {
 	opt.id = id;
 	opt.sim_time_remaining = 0.0;
 	return opt;
+}
+
+function rad_to_coord(rad, distance) {
+    var x_val = Math.cos(rad)*distance;
+    var y_val = Math.sin(rad)*distance;
+    return {x: x_val, y: y_val};
+}
+
+function sigmoid(input, mid, max, rate) {
+	// TODO don't understand whether formula is wrong or understanding insufficient
+	var nominator = max;
+	var denominator = 1 + Math.exp(-rate*(input - mid));
+	return nominator/denominator;
+}
+
+function get_rate(input, min, max) {
+	if (input < min) {
+		return -1;
+	} else if (input > max) {
+		return 1;
+	} else {
+		// assuming that min = -max!
+		return input/max;
+		// var diff = max - min;
+		// return (2/diff)*input - (2/diff)*min - 1;
+	}
+}
+
+function round_digits(input, decimals) {
+    return Math.round(input*(decimals*10))/(decimals*10);
+}
+
+function get_rad_for_arrow(rate) {
+	var rad = rate/2;
+	rad *= -1;
+	rad += 1;
+	rad *= Math.PI;
+	return rad;
+}
+
+function get_rate_for_arrow(rad) {
+	var rate = rad/Math.PI;
+	rate -= 1;
+	rate /= -1;
+	return rate*2;
+}
+
+function get_distance(pos1, pos2) {
+	// pythagoras' theorem
+	var len_x = pos2.x - pos1.x;
+	var len_y = pos2.y - pos1.y;
+	return Math.sqrt(len_x*len_x + len_y*len_y);
 }

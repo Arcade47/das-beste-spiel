@@ -36,7 +36,7 @@ function init_coworker_types(min_dur, max_dur) {
         coworkers[mirror_ind].match_coworker = coworkers[cw_ind];
     }
     if (coworkers.length%2 != 0) { // odd number --> add extra talker
-        coworkers[cw_inds[Math.ceil(cw_inds.length)]].type = 0;
+        coworkers[cw_inds[cw_inds.length-1]].type = 0;
     }
     // apply durs
     var step = (max_dur - min_dur)/cw_inds.length;
@@ -156,14 +156,15 @@ function get_ind_of_highscore(value, scores) {
 
 }
 
-function re_init_all_vars(first_start) {
+function re_init_all_vars() {
 
     // gameplay-relevant parameters
-    time_left = 210; // 3.5 minutes seem realistic
-    n_floors = 3;
-    n_offices_per_floor = 5;
-    floor_height = (canv_h - 1/6)/5;
-    money = 500000; // realistic start: 500000
+    cost_per_door = 15000;
+    time_left = 300; // 3.5 minutes seem realistic
+    n_floors = Math.min(7, 1);
+    n_offices_per_floor = Math.min(7, 4);
+    floor_height = (canv_h - 1/6)/(n_floors+2);
+    money = 100000; // realistic start: 500000
     min_awake_dur = 0.05*time_left;
     max_awake_dur = 1.0*time_left;
     walk_speed = canv_w/500;
@@ -171,8 +172,8 @@ function re_init_all_vars(first_start) {
     boss_productivity_per_person_per_frame = 12; // gain of money
     scare_tolerance = 0.0625*canv_w; // how near can coworkers come to boss to not be scared?
     door_check_dur = 0.1 // seconds to wait in front of each door
-    stairway_w = canv_w/8; 
-    hallway_w = 5*canv_w/8;
+    stairway_w = canv_w/(11);//(13 - n_offices_per_floor); 
+    hallway_w = n_offices_per_floor*canv_w/10;
 
     // physics
     goal_tolerance = walk_speed/2
@@ -186,7 +187,6 @@ function re_init_all_vars(first_start) {
     // vars that keep track of game states
     current_pos = {x: 0, y: 0};
     startTime = new Date(); // initialization
-    game_running = !first_start;
 
     // fill containers with initial values
     // create stories
@@ -199,49 +199,19 @@ function re_init_all_vars(first_start) {
     init_coworker_types(min_awake_dur, max_awake_dur); // initialize properties of coworkers
 }
 
+function upgrade(new_n_floors, new_n_doors, new_money) {
+    bank_account.balance = new_money;
+    n_floors = Math.min(7, new_n_floors);
+    n_offices_per_floor = Math.min(7, new_n_doors);
+    floor_height = (canv_h - 1/6)/(n_floors+2);
+    stairway_w = canv_w/(11);//(13 - n_offices_per_floor); 
+    hallway_w = n_offices_per_floor*canv_w/10;
+    building = new Building(); // also initializes people
+    init_stories(n_floors); // seperate function because Story extends Building --> too much recursion otherwise
+    init_coworker_types(min_awake_dur, max_awake_dur); // initialize properties of coworkers
+}
+
 function show_start_screen() {
     set_canvas_bg("black");
     draw_canvas_text_flex("Ready", {x: canv_w/2, y: canv_h/2}, "white", canv_w/40, align="center");
-}
-
-function show_instructions() {
-
-    set_canvas_bg("black");
-    if (canvas.width > canvas.height) {  
-        var lines = [
-            "In der folgenden Aufgabe sollen Sie in 210 Sekunden so viel Geld wie möglich erwirtschaften.",
-            "Sie generieren Geld, indem Sie im Büro arbeiten und genügend Mitarbeiter produktiv sind.",
-            "Sie können Mitarbeiter produktiv halten, indem Sie auf die entsprechenden Türen klicken.",
-            "Beachten Sie aber, dass Sie dann für eine gewisse Zeit nicht im Büro sind.",
-            "",
-            "Wenn Sie keine Fragen mehr haben, klicken / tippen Sie, um zu beginnen."
-        ]
-        var ypos = canv_h/5;
-        var step = canv_h/10;
-        var size = canv_w/50;
-    } else {
-        var lines = [
-            "In der folgenden Aufgabe sollen Sie in 210",
-            "Sekunden so viel Geld wie möglich erwirtschaften.",
-            "Sie generieren Geld, indem Sie im Büro arbeiten",
-            "und genügend Mitarbeiter produktiv sind.",
-            "Sie können Mitarbeiter produktiv halten,",
-            "indem Sie auf die entsprechenden Türen klicken.",
-            "Beachten Sie aber, dass Sie dann für",
-            "eine gewisse Zeit nicht im Büro sind.",
-            "",
-            "Wenn Sie keine Fragen mehr haben,",
-            "klicken / tippen Sie, um zu beginnen."
-        ]
-        var ypos = canv_h/7.5;
-        var step = (canv_h - (canv_h/5))/11;
-        var size = canv_w/30;
-    }
-    
-    for (let index = 0; index < lines.length; index++) {
-        const line = lines[index];
-        draw_canvas_text_flex(line, {x: canv_w/2, y: ypos}, "white", size, align="center");
-        ypos += step;
-    }
-
 }

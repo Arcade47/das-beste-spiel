@@ -1,53 +1,73 @@
 // test: communicate w/ php
 
-// var str = "test test test";
+var game_state = "choose_mode"; // choose_mode instructions game highscores
 
+function resizeCanvas() {
 
+	if (window.innerWidth/window.innerHeight > 1.78) {
+		// too stretched; add PAL bars
+		canvas.width = window.innerHeight*1.78;
+		canvas.height = window.innerHeight;
+	} else if (window.innerWidth/window.innerHeight < 1.4) {
+		// too stretched; add PAL bars
+		canvas.width = window.innerWidth;
+		canvas.height = window.innerWidth/1.4;
+	} else {
+		canvas.width = window.innerWidth;
+		canvas.height = window.innerHeight;
+	}
 
+    // if (game_state == "game") {
+	xscale = canvas.width/canv_w;
+	yscale = canvas.height/canv_h;
+	ctx.setTransform(xscale, 0, 0, yscale, 0, 0);
+    // }
+    
+}
 
 // inputs: radius, position on canvas and context
 
 // control canvas prints - setup
 var canvas = document.getElementById("GameCanvas");
 var ctx = canvas.getContext("2d");
-canvas.width  = window.innerWidth;
-canvas.height = window.innerHeight;
+resizeCanvas();
 var canv_w = canvas.width;
 var canv_h = canvas.height;
-var horizontal_screen = true;
-var vertical_screen = false;
 
-function tilt_canvas() {
+// var horizontal_screen = true;
+// var vertical_screen = false;
 
-	if (window.innerHeight > window.innerWidth) {
-		// tilt to vertical
-		// canvas.width = window.innerWidth;
-		// canvas.height = window.innerHeight;
-		ctx.rotate((90/360)*(2*Math.PI));
-		ctx.translate(0, -window.innerWidth);
-		/*
-		console.log("tilt to vertical")
-		ctx.rotate((90/360)*(2*Math.PI));
-		ctx.translate(0, -window.innerWidth);
-		vertical_screen = true;
-		horizontal_screen = false;
-		// */
-	} else if (window.innerHeight < window.innerWidth) { // vertical_screen
-		// tilt to horizontal
-		// canvas.width = window.innerWidth;
-		// canvas.height = window.innerHeight;
-		ctx.rotate((0)*(2*Math.PI)); // absolute coordinates
-		// horizontal_screen = true;
-		// vertical_screen = false;
-	}
-}
+// function tilt_canvas() {
 
-// preparing tilt
-if (window.innerHeight > window.innerWidth) {
-	tilt_canvas();
-	canv_w = canvas.height;
-	canv_h = canvas.width;
-}
+// 	if (window.innerHeight > window.innerWidth) {
+// 		// tilt to vertical
+// 		// canvas.width = window.innerWidth;
+// 		// canvas.height = window.innerHeight;
+// 		ctx.rotate((90/360)*(2*Math.PI));
+// 		ctx.translate(0, -window.innerWidth);
+// 		/*
+// 		console.log("tilt to vertical")
+// 		ctx.rotate((90/360)*(2*Math.PI));
+// 		ctx.translate(0, -window.innerWidth);
+// 		vertical_screen = true;
+// 		horizontal_screen = false;
+// 		// */
+// 	} else if (window.innerHeight < window.innerWidth) { // vertical_screen
+// 		// tilt to horizontal
+// 		// canvas.width = window.innerWidth;
+// 		// canvas.height = window.innerHeight;
+// 		ctx.rotate((0)*(2*Math.PI)); // absolute coordinates
+// 		// horizontal_screen = true;
+// 		// vertical_screen = false;
+// 	}
+// }
+
+// // preparing tilt
+// if (window.innerHeight > window.innerWidth) {
+// 	tilt_canvas();
+// 	canv_w = canvas.height;
+// 	canv_h = canvas.width;
+// }
 
 // TODO implement scrolling
 
@@ -100,7 +120,8 @@ function draw_timed(n_frames) {
 
 function draw_line(coords, color) {
 	ctx.beginPath();
-	ctx.lineWidth="1";
+	ctx.lineWidth=Math.max(1, canv_w/500);
+	
 	ctx.strokeStyle=color;
 	ctx.moveTo(coords[0].x, coords[0].y);
 	ctx.lineTo(coords[1].x, coords[1].y);
@@ -108,9 +129,10 @@ function draw_line(coords, color) {
 	ctx.closePath();
 }
 
-function draw_path(coords, color) {
+function draw_path(coords, color, thickness=Math.max(1, canv_w/500)) {
 	ctx.beginPath();
-	ctx.lineWidth="1";
+	ctx.lineWidth=thickness;
+	console.log(Math.max(1, canvas.width/500))
 	ctx.strokeStyle=color;
 	ctx.moveTo(coords[0].x, coords[0].y);
 	for (let index = 1; index < coords.length; index++) {
@@ -130,6 +152,7 @@ function draw_circ(r, pos, color) {
 
 function draw_circ_outline(r, pos, outlinecolor, fillcolor) {
 	ctx.beginPath();
+	ctx.lineWidth=Math.max(1, canv_w/500);
 	ctx.fillStyle=fillcolor;
 	ctx.strokeStyle=outlinecolor;
 	ctx.arc(pos.x, pos.y, r, 0, 2*Math.PI);
@@ -173,7 +196,7 @@ function draw_speech_bubble(text, pos) {
 	// adding colors
 	ctx.strokeStyle="black";
 	ctx.fillStyle="white";
-	ctx.lineWidth = 3;
+	ctx.lineWidth=Math.max(1, canv_w/200);
 	ctx.beginPath();
 	// assuming edge of bubble starts 10 px to right and above pos
 	for (let index = 0; index < coords.length; index++) {
@@ -184,6 +207,27 @@ function draw_speech_bubble(text, pos) {
 	ctx.stroke();
 	ctx.fill();
 	draw_canvas_text_flex(text, {x: pos.x + 0.025*canv_h, y: pos.y - 0.025*canv_h - 0.01*canv_h}, "black", 0.9*font_size, align="center");
+}
+
+function draw_textbox(lines, pos, len=1) {
+	var w = len*(canv_w/8);
+	var h = (canv_w/35)*lines.length + (canv_w/50);
+
+	// center pos
+	pos.x -= w/2;
+	pos.y -= h/2;
+
+	draw_rect_outline(pos, w, h, "GoldenRod", "Gold");
+
+	var step = canv_w/35;
+	var size = canv_w/35;
+
+	for (let index = 0; index < lines.length; index++) {
+		const line = lines[index];
+		draw_canvas_text_flex(line, {x: pos.x + w/2, y: pos.y + (canv_w/35) + (canv_w/100)}, "DarkViolet", size, align="center");
+		pos.y += step;
+	}
+
 }
 
 function draw_vertex(coord) {
@@ -206,6 +250,7 @@ function draw_rect(coord, w, h, color) {
 
 function draw_rect_outline(coord, w, h, strokecolor, fillcolor) {
 	ctx.beginPath();
+	ctx.lineWidth=Math.max(1, canv_w/200);
 	ctx.strokeStyle=strokecolor;
 	ctx.fillStyle=fillcolor;
 	ctx.rect(coord.x, coord.y, w, h);
@@ -213,13 +258,13 @@ function draw_rect_outline(coord, w, h, strokecolor, fillcolor) {
 	ctx.fill();
 }
 
-function draw_debug_text(string) {
+function draw_debug_text(string, pos = {x: canvas.width/4, y: canvas.height/2}) {
 	
 	ctx.font = "40px Arial";
 	ctx.strokeStyle="red";
 	ctx.fillStyle="red";
-	ctx.strokeText(string, canvas.width/4, canvas.height/2);
-	ctx.fillText(string, canvas.width/4, canvas.height/2); 
+	ctx.strokeText(string, pos.x, pos.y);
+	ctx.fillText(string, pos.x, pos.y); 
 	
 }
 
@@ -386,10 +431,121 @@ function draw_highscores(pair) {
 	for (let index = 0; index < pair.length; index++) {
 		var splitted = pair[index].split("|a|");
 		draw_canvas_text_flex(String(index+1)+".", 	{x: canv_w/2 - 2*canv_w/5, y: ypos}, "white", canv_h/15, align="left");
-		console.log(splitted)
 		draw_canvas_text_flex(splitted[0], 		{x: canv_w/2 - canv_w/3, y: ypos}, "white", canv_h/15, align="left");
 		draw_canvas_text_flex(splitted[1]+" €", 	{x: canv_w - (canv_w/2 - 2*canv_w/5), y: ypos}, "white", canv_h/15, align="right");
 		ypos += canv_h/9;
 	}
 	draw_canvas_text_flex("Click / tap to try again", 	{x: canv_w/2, y: canv_h - canv_h/10}, "white", canv_h/15, align="center");
+}
+
+function get_color_label(R, G, B, A) {
+    return "rgba(" + String(R) + ", " + String(G) + ", " + String(B) + ", " + String(A) + ")";
+}
+
+function show_instructions() {
+
+    set_canvas_bg("black");
+    if (canvas.width > canvas.height) {  
+        var lines = [
+			"In der folgenden Aufgabe sollen Sie in",
+			"begrenzter Zeit so viel Geld wie möglich erwirtschaften.",
+			"Sie generieren Geld, indem Sie im Büro arbeiten",
+			"und genügend Mitarbeiter produktiv sind.",
+			"Sie können Mitarbeiter produktiv halten,",
+			"indem Sie auf die entsprechenden Türen klicken.",
+			"Beachten Sie aber, dass Sie dann für eine",
+			"gewisse Zeit nicht im Büro sind.",
+			"",
+            "- Clicken/Tippen, um zum Menü zurückzukehren -"
+        ]
+        var ypos = canv_h/10;
+        var step = canv_h/12;
+        var size = canv_w/35;
+    } else {
+        var lines = [
+            "In der folgenden Aufgabe sollen Sie in 210",
+            "Sekunden so viel Geld wie möglich erwirtschaften.",
+            "Sie generieren Geld, indem Sie im Büro arbeiten",
+            "und genügend Mitarbeiter produktiv sind.",
+            "Sie können Mitarbeiter produktiv halten,",
+            "indem Sie auf die entsprechenden Türen klicken.",
+            "Beachten Sie aber, dass Sie dann für",
+            "eine gewisse Zeit nicht im Büro sind.",
+            "",
+            "Wenn Sie keine Fragen mehr haben,",
+            "klicken / tippen Sie, um zu beginnen."
+        ]
+        var ypos = canv_h/7.5;
+        var step = (canv_h - (canv_h/5))/11;
+        var size = canv_w/30;
+    }
+    
+    for (let index = 0; index < lines.length; index++) {
+        const line = lines[index];
+        draw_canvas_text_flex(line, {x: canv_w/2, y: ypos}, "white", size, align="center");
+        ypos += step;
+    }
+
+}
+
+function start_screen() {
+	set_canvas_bg("black");
+    var lines = [
+            "DAS BESTE(-)SPIEL",
+			"",
+            "Anleitung",
+            "Spiel starten",
+        ]
+        var ypos = canv_h/5;
+        var step = canv_h/7;
+        var size = canv_w/30;
+    
+    for (let index = 0; index < lines.length; index++) {
+        const line = lines[index];
+        draw_canvas_text_flex(line, {x: canv_w/2, y: ypos}, "white", size, align="center");
+        ypos += step;
+    }
+}
+
+function draw_arrow(rad) {
+
+	// draw next to bank account display
+	var arrow_width = canv_h/10;
+	var pos = {x: 0.5*canv_w, y: canv_h/(6*2) + arrow_width/2};
+
+	var middle_coord = {x: pos.x + 0.5*arrow_width, y: pos.y - 0.5*arrow_width};
+
+	// line
+	var coords = [];
+	var coord2 = rad_to_coord(rad, 0.85*arrow_width);
+	coords.push({x: middle_coord.x + coord2.x, 				y: middle_coord.y + coord2.y});
+	coords.push({x: pos.x + 0.5*arrow_width,				y: pos.y - 0.5*arrow_width});
+
+	// arrow head
+	var coords_poly = [];
+	var rad1 = (rad + 0.5*Math.PI)%(2*Math.PI);
+	var rad2 = (rad + 1.0*Math.PI)%(2*Math.PI);
+	var rad3 = (rad + 1.5*Math.PI)%(2*Math.PI);
+	var coord_poly1 = rad_to_coord(rad1, 0.2*arrow_width);
+	var coord_poly2 = rad_to_coord(rad2, 0.5*arrow_width);
+	var coord_poly3 = rad_to_coord(rad3, 0.2*arrow_width);
+	coords_poly.push({x: middle_coord.x + coord_poly1.x, 	y: middle_coord.y + coord_poly1.y});
+	coords_poly.push({x: middle_coord.x + coord_poly2.x, 	y: middle_coord.y + coord_poly2.y});
+	coords_poly.push({x: middle_coord.x + coord_poly3.x, 	y: middle_coord.y + coord_poly3.y});
+
+	// color is determined by rate
+	var rate = get_rate_for_arrow(rad);
+	// draw_debug_text(round_digits(rate, 2), {x: pos.x + 200, y: pos.y});
+	if (rate > 0) {
+		var G = 255;
+		var R = Math.round((1 - rate)*255);
+	} else {
+		var R = 255;
+		var G = Math.round((1 - Math.abs(rate))*255);
+	}
+	var color = get_color_label(R, G, 0, 1);
+
+	// draw with the specs
+	draw_path(coords, color, Math.max(1, canv_w/200));
+	draw_poly(coords_poly, color);
 }
