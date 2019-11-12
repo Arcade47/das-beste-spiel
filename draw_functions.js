@@ -132,7 +132,6 @@ function draw_line(coords, color) {
 function draw_path(coords, color, thickness=Math.max(1, canv_w/500)) {
 	ctx.beginPath();
 	ctx.lineWidth=thickness;
-	console.log(Math.max(1, canvas.width/500))
 	ctx.strokeStyle=color;
 	ctx.moveTo(coords[0].x, coords[0].y);
 	for (let index = 1; index < coords.length; index++) {
@@ -488,7 +487,7 @@ function show_instructions() {
 
 }
 
-function start_screen() {
+function start_screen(arrows) {
 	set_canvas_bg("black");
     var lines = [
             "DAS BESTE(-)SPIEL",
@@ -504,7 +503,12 @@ function start_screen() {
         const line = lines[index];
         draw_canvas_text_flex(line, {x: canv_w/2, y: ypos}, "white", size, align="center");
         ypos += step;
-    }
+	}
+	
+	for (let index = 0; index < arrows.length; index++) {
+		const a = arrows[index];
+		draw_arrow_flex(a, Math.PI, "white");
+	}
 }
 
 function draw_arrow(rad) {
@@ -544,6 +548,36 @@ function draw_arrow(rad) {
 		var G = Math.round((1 - Math.abs(rate))*255);
 	}
 	var color = get_color_label(R, G, 0, 1);
+
+	// draw with the specs
+	draw_path(coords, color, Math.max(1, canv_w/200));
+	draw_poly(coords_poly, color);
+}
+
+function draw_arrow_flex(pos, rad, color) {
+
+	// draw next to bank account display
+	var arrow_width = canv_h/10;
+
+	var middle_coord = {x: pos.x + 0.5*arrow_width, y: pos.y - 0.5*arrow_width};
+
+	// line
+	var coords = [];
+	var coord2 = rad_to_coord(rad, 0.85*arrow_width);
+	coords.push({x: middle_coord.x + coord2.x, 				y: middle_coord.y + coord2.y});
+	coords.push({x: pos.x + 0.5*arrow_width,				y: pos.y - 0.5*arrow_width});
+
+	// arrow head
+	var coords_poly = [];
+	var rad1 = (rad + 0.5*Math.PI)%(2*Math.PI);
+	var rad2 = (rad + 1.0*Math.PI)%(2*Math.PI);
+	var rad3 = (rad + 1.5*Math.PI)%(2*Math.PI);
+	var coord_poly1 = rad_to_coord(rad1, 0.2*arrow_width);
+	var coord_poly2 = rad_to_coord(rad2, 0.5*arrow_width);
+	var coord_poly3 = rad_to_coord(rad3, 0.2*arrow_width);
+	coords_poly.push({x: middle_coord.x + coord_poly1.x, 	y: middle_coord.y + coord_poly1.y});
+	coords_poly.push({x: middle_coord.x + coord_poly2.x, 	y: middle_coord.y + coord_poly2.y});
+	coords_poly.push({x: middle_coord.x + coord_poly3.x, 	y: middle_coord.y + coord_poly3.y});
 
 	// draw with the specs
 	draw_path(coords, color, Math.max(1, canv_w/200));

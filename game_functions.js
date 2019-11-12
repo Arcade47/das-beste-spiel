@@ -24,9 +24,11 @@ function isNumber(n) {
 }  
 
 function init_coworker_types(min_dur, max_dur) {
+
     // shuffle coworker inds
     var cw_inds = [...Array(coworkers.length).keys()];
     shuffle(cw_inds); // TODO make sure that no output is needed
+
     // set the types and corresponding matches
     for (let index = 0; index < Math.floor(cw_inds.length/2); index++) {
         var cw_ind = cw_inds[index];
@@ -38,6 +40,7 @@ function init_coworker_types(min_dur, max_dur) {
     if (coworkers.length%2 != 0) { // odd number --> add extra talker
         coworkers[cw_inds[cw_inds.length-1]].type = 0;
     }
+
     // apply durs
     var step = (max_dur - min_dur)/cw_inds.length;
     var dur = min_dur;
@@ -46,18 +49,92 @@ function init_coworker_types(min_dur, max_dur) {
         coworkers[cw_inds[index]].awake_time_left = dur;
         dur += step;
     }
+
     shuffle(cw_inds);
+
     var dur = min_dur;
     for (let index = 0; index < cw_inds.length; index++) {
         coworkers[cw_inds[index]].focus_time = dur;
         coworkers[cw_inds[index]].focus_time_left = dur;
         dur += step;
     }
+
 }
 
-function init_stories(n_floors) {
+function reinit_new_coworker_types(min_dur, max_dur, new_door, new_floor) {
+    // goal: keep the ones that are already included and place them in the list of coworkers
+    // place them correctly in matrix
+
+    // get the new members from whole list of coworkers
+    var new_members = [];
+    if (new_floor) {
+        new_members = new_coworkers.slice(1, n_offices_per_floor - 1);
+    }
+    if (new_door) {
+        for (let floor_n = 0; index < building.n_floors; floor_n++) {
+            door_n = (n_offices_per_floor - 1) + floor_n*n_offices_per_floor;
+            new_members.push(new_coworkers[door_n]);
+        }
+    }
+
+    // randomly set them as talkers or sleepers
+    var rand_type_order = [];
+    for (let index = 0; index < Math.floor(new_members.length/2); index++) {
+        rand_type_order.push(0);
+        rand_type_order.push(1);
+    }
+    if (rand_type_order.length%2 != 0) { // odd number --> add extra talker
+        rand_type_order.push(0);
+    }
+    shuffle(rand_type_order);
+    for (let index = 0; index < new_members.length; index++) {
+        new_members[index].type = rand_type_order[index];
+    }
+
+    // append them to old array in correct places
+    if (new_floor) {
+        coworkers.unshift(new_members);
+    }
+    if (new_door) {
+        var coworkers_buffer = [];
+        var cw_ind = 0;
+        var ncw_ind = 0;
+        for (let index = 0; index < coworkers.length; index++) {
+            coworkers_buffer.push(coworkers[index]);
+            // test if last door
+            if ((index + 1)%(n_offices_per_floor - 1) == 0) {
+                coworkers_buffer.push(new_coworkers[ncw_ind]);
+                ncw_ind += 1;
+            }
+        }
+        coworkers = coworkers_buffer;
+    }
+
+    // set new matching people
+    // get indices of talkers
+    var talkers = [];
+    for (let index = 0; index < coworkers.length; index++) {
+        if (coworkers[index].type == 0) {
+            talkers.push(index);
+        }
+    }
+
+    for (let index = 0; index < coworkers.length; index++) {
+        if (coworkers[index].type == 1) {
+            
+        }
+        var cw_ind = cw_inds[index];
+        var mirror_ind = cw_inds[cw_inds.length - 1 - index];
+        coworkers[cw_ind].type = 0;
+        coworkers[mirror_ind].type = 1;
+        coworkers[mirror_ind].match_coworker = coworkers[cw_ind];
+    }
+
+}
+
+function init_stories(n_floors, upgrade=false) {
     for (let index = 0; index < n_floors; index++) {
-        stories.push(new Story(index));
+        stories.push(new Story(index, upgrade));
     }
 }
 
@@ -161,8 +238,8 @@ function re_init_all_vars() {
     // gameplay-relevant parameters
     cost_per_door = 15000;
     time_left = 300; // 3.5 minutes seem realistic
-    n_floors = Math.min(7, 1);
-    n_offices_per_floor = Math.min(7, 4);
+    n_floors = 1;
+    n_offices_per_floor = 4;
     floor_height = (canv_h - 1/6)/(n_floors+2);
     money = 100000; // realistic start: 500000
     min_awake_dur = 0.05*time_left;
@@ -201,14 +278,21 @@ function re_init_all_vars() {
 
 function upgrade(new_n_floors, new_n_doors, new_money) {
     bank_account.balance = new_money;
-    n_floors = Math.min(7, new_n_floors);
-    n_offices_per_floor = Math.min(7, new_n_doors);
+    n_floors = new_n_floors;
+    n_offices_per_floor = new_n_doors;
     floor_height = (canv_h - 1/6)/(n_floors+2);
     stairway_w = canv_w/(11);//(13 - n_offices_per_floor); 
     hallway_w = n_offices_per_floor*canv_w/10;
+
+    // containers
+    coworkers = [];
+    stories = [];
+    doors = [];
+    doors_path = []; // gets emptied when a door is reached
+
     building = new Building(); // also initializes people
-    init_stories(n_floors); // seperate function because Story extends Building --> too much recursion otherwise
-    init_coworker_types(min_awake_dur, max_awake_dur); // initialize properties of coworkers
+    init_stories(n_floors, true); // seperate function because Story extends Building --> infinite recursion otherwise
+    reinit_coworker_types(min_awake_dur, max_awake_dur); // initialize properties of coworkers
 }
 
 function show_start_screen() {

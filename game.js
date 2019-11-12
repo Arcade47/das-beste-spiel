@@ -1,6 +1,7 @@
 // initialization - setup global vars
 
 var game_state = "choose_mode"; // choose_mode instructions game highscores
+var hover_arrows_menu = [];
 var best_five_array; // for highscores
 
 // game-feel, not game-play related
@@ -38,6 +39,8 @@ var goal_tolerance; // never smaller than 0.5*walk_speed! left and right of goal
 
 // containers and class instances (objects)
 var coworkers;
+var new_coworkers; // in case of upgrade: differentiate between old and new coworkers
+// because identity of new coworkers must be defined first
 var stories;
 var doors;
 var doors_path; // gets emptied when a door is reached
@@ -55,6 +58,7 @@ var skycolor = "blue";
 // add event listeners
 // document.addEventListener("mousemove", mousemove);
 document.addEventListener("mousedown", mousedown);
+document.addEventListener("mousemove", mousemove);
 document.addEventListener('touchstart', tap); // TODO: find out whether single quotes necessary here
 window.addEventListener('orientationchange', resizeCanvas, false);
 window.addEventListener('resize', resizeCanvas, false);
@@ -85,6 +89,35 @@ class Text {
 class Opportunity {
     constructor(type) {
         this.type = type;
+        this.horizontal_lines = 1;
+        this.vertical_lines = 1;
+        this.worth = 0;
+        if (this.type == "door") {
+            this.vertical_lines = 3;
+            // get x position
+            var x_pos = building.stairway2_start_x + building.stairway_width + canv_w/12;
+            // get y position
+            var start_y = canv_h - building.building_height - 0.5*grass.height;
+            var end_y = start_y + building.building_height;
+            var y_pos = start_y + (end_y - start_y)/2;
+            this.worth = building.n_floors*cost_per_door;
+        }
+        if (this.type == "floor") {
+            this.horizontal_lines = 3;
+            // get x position
+            var x_pos = canv_w/2;
+            // get y position
+            var y_pos = canv_h - building.building_height - 0.5*grass.height - canv_h/40 - canv_h/25;
+            this.worth = n_offices_per_floor*cost_per_door;
+        }
+        
+        this.w = this.horizontal_lines*(canv_w/8);
+        this.h = (canv_w/35)*this.vertical_lines + (canv_w/50);
+        this.pos = {x: Math.min(x_pos, canv_w - this.w/2), y: y_pos};
+        this.x1 = this.pos.x - this.w/2;
+        this.x2 = this.pos.x + this.w/2;
+        this.y1 = this.pos.y - this.h/2;
+        this.y2 = this.pos.y + this.h/2;
     }
     clicked_on(pos) {
         if (pos.x >= this.x1 && pos.x <= this.x2 && pos.y >= this.y1 && pos.y <= this.y2) {
@@ -97,20 +130,12 @@ class Opportunity {
             // plural
             var add = "";
             if (building.n_floors > 1) add = "S";
-            // get x position
-            var x_pos = building.stairway2_start_x + building.stairway_width + canv_w/12;
-            // get y position
-            var start_y = canv_h - building.building_height - 0.5*grass.height;
-            var end_y = start_y + building.building_height;
-            var y_pos = start_y + (end_y - start_y)/2;
-            draw_textbox(["BÜRO"+add, "KAUFEN", String((cost_per_door*building.n_floors)/1000)+" K"], {x: x_pos, y: y_pos});
+            
+            draw_textbox(["BÜRO"+add, "KAUFEN", String((cost_per_door*building.n_floors)/1000)+" K"], this.pos);
         }
         if (this.type == "floor") {
-            // get x position
-            var x_pos = canv_w/2;
-            // get y position
-            var y_pos = canv_h - building.building_height - 0.5*grass.height - canv_h/40 - canv_h/25;
-            draw_textbox(["ETAGE KAUFEN "+String((cost_per_door*n_offices_per_floor)/1000)+" K"], {x: x_pos, y: y_pos}, 3);
+            
+            draw_textbox(["ETAGE KAUFEN "+String((cost_per_door*n_offices_per_floor)/1000)+" K"], this.pos, 3);
         }
     }
 }
@@ -348,19 +373,15 @@ class BankAccount {
 
         // draw buying opportunities
         this.opportunities = []; // reset
-        // 1. door(s)
-        if (this.balance > cost_per_door*building.n_floors) {
-            this.opportunities.push(new Opportunity("door"))
-        }
-        // 2. floor
-        if (this.balance > cost_per_door*n_offices_per_floor) {
-            this.opportunities.push(new Opportunity("floor"))
-        }
-
-        // check if clicked on opportunities
-        for (let index = 0; index < this.opportunities.length; index++) {
-            const opp = this.opportunities[index];
-            opp.render();
+        if (boss.in_office) {
+            // 1. door(s)
+            if (this.balance > cost_per_door*building.n_floors && n_offices_per_floor < 8) {
+                this.opportunities.push(new Opportunity("door"))
+            }
+            // 2. floor
+            if (this.balance > cost_per_door*n_offices_per_floor && building.n_floors < 6) {
+                this.opportunities.push(new Opportunity("floor"))
+            }
         }
 
         // set game over
@@ -399,9 +420,6 @@ class Building {
         this.hallway_length = hallway_w;
         this.n_floors = n_floors;
         this.height = floor_height;
-        // set canvas dimensions!
-        // canv_w = 2*this.stairway_width + this.hallway_length + 140;
-        // canv_h = n_floors*floor_height + 140;
         // derived vars
         this.stairway1_start_x = canv_w/2 - this.hallway_length/2 - this.stairway_width;
         this.stairway2_start_x = canv_w/2 + this.hallway_length/2;
@@ -469,7 +487,7 @@ class Stairs extends Building {
 }
 
 class Story extends Building { // here also doors are added
-    constructor(floor_n) {
+    constructor(floor_n, after_upgrade=false) {
         super();
         this.n_doors = n_offices_per_floor;
         this.floor_n = floor_n;
@@ -487,15 +505,14 @@ class Story extends Building { // here also doors are added
         for (let index = 0; index < this.n_doors; index++) {
             // don't add boss door to list (first in topmost floor)
             if (this.floor_n == n_floors - 1 && !boss_placed) {
-            // if (this.floor_n == n_floors - 1 && index == this.n_doors-1) {
                 boss_door = new Door(index, this.start_x, this.start_y - 0.5*grass.height, -1, this.floor_n);
                 boss_door.color = "brown";
                 boss = new DaBoss(boss_door.goal, boss_door);
                 boss_placed = true;
             } else {
                 var new_door = new Door(index, this.start_x, this.start_y - 0.5*grass.height, doors.length, this.floor_n);
-                // spawn the correct coworker in working state
-                new_door.coworkers_in_room.push(new CoWorker(new_door));
+                // spawn the correct coworker in working state --> only if not upgraded building
+                new_door.coworkers_in_room.push(new CoWorker(new_door, after_upgrade));
                 doors.push(new_door);
             }
         }
@@ -872,9 +889,14 @@ class Person extends Mover {
 }
 
 class CoWorker extends Person {
-    constructor(door) {
+    constructor(door, after_upgrade=false) {
         super();
-        this.ind = coworkers.length;
+        this.type = -1; // initialize as not applied yet
+        if (!after_upgrade) {
+            this.ind = coworkers.length;
+        } else {
+            this.ind = new_coworkers.length;
+        }
         this.door = door;
         this.door_ind = door.ind; // check if in own office
         // this.home = door.goal; // to find back to correct door
@@ -889,8 +911,13 @@ class CoWorker extends Person {
         // this.focus_time_left = this.focus_time;
         // state variables
         this.base_speed = this.walk_speed; // for resetting it later
-        // add to list of coworkers
-        coworkers.push(this);
+        // add to list of coworkers --> only if not upgraded, i.e. first initialization
+        if (!after_upgrade) {
+            coworkers.push(this);
+        } else {
+            // keep the old coworker list, add to new list
+            new_coworkers.push(this);
+        }
     }
     controlled() {
         // always by boss when he knocks on door where this coworker currently is in
@@ -1210,7 +1237,7 @@ function update() {
 function draw_all() {
 
     if (game_state == "choose_mode") {
-        start_screen();
+        start_screen(hover_arrows_menu);
     }
 
     if (game_state == "instructions") {
@@ -1265,6 +1292,7 @@ function mousedown(e) {
         current_pos = getXY_exact(e, xscale, yscale);
 
         if (e.which == 1) { // LMB
+
             // check at which height --> which menu option is clicked
 
             var ypos = canv_h/5 + canv_h/20;
@@ -1293,6 +1321,7 @@ function mousedown(e) {
         current_pos = getXY_exact(e, xscale, yscale);
 
         if (e.which == 1) { // LMB
+            // check whether clicked in doors
             for (let index = 0; index < doors.length; index++) {
                 if (doors[index].clicked_on(current_pos)) {
                     // first make sure the same door was not clicked on twice.
@@ -1308,6 +1337,21 @@ function mousedown(e) {
                     // not clicked on twice --> label the door
                     doors_path.push(doors[index]);
                     doors[index].label(doors_path.length);
+                }
+            }
+            // checked whether clicked on opportunities
+            // check if clicked on opportunities
+            for (let index = 0; index < bank_account.opportunities.length; index++) {
+                const opp = bank_account.opportunities[index];
+                if (opp.clicked_on(current_pos)) {
+                    
+                    if (opp.type == "door") {
+                        upgrade(building.n_floors, n_offices_per_floor + 1, bank_account.balance - opp.worth);
+                    }
+                    if (opp.type == "floor") {
+                        upgrade(building.n_floors + 1, n_offices_per_floor, bank_account.balance - opp.worth);
+                    }
+                    
                 }
             }
         }
@@ -1330,6 +1374,32 @@ function tap(e) {
         mousedown(e);
 
     }
+}
+
+function mousemove(e) {
+
+    if (game_state == "choose_mode") {
+
+        current_pos = getXY_exact(e, xscale, yscale);
+
+        // check at which height --> which menu option is clicked
+
+        var ypos = canv_h/5 + canv_h/20;
+        var step = canv_h/7;
+
+        hover_arrows_menu = [];
+
+        if (current_pos.x >= 0 && current_pos.x <= canv_w) {
+            if (current_pos.y >= ypos + 1*step && current_pos.y <= ypos + 2*step) {
+                hover_arrows_menu.push({x: canv_w/4, y: ypos + 1.75*step});
+            }
+            if (current_pos.y >= ypos + 2*step && current_pos.y <= ypos + 3*step) {
+                hover_arrows_menu.push({x: canv_w/4, y: ypos + 2.75*step});
+            }
+        }
+
+    }
+
 }
 
 update();
