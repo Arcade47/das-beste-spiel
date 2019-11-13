@@ -61,20 +61,27 @@ function init_coworker_types(min_dur, max_dur) {
 
 }
 
-function reinit_new_coworker_types(min_dur, max_dur, new_door, new_floor) {
+function reinit_coworker_types(min_dur, max_dur, new_door, new_floor) {
     // goal: keep the ones that are already included and place them in the list of coworkers
     // place them correctly in matrix
 
     // get the new members from whole list of coworkers
     var new_members = [];
     if (new_floor) {
-        new_members = new_coworkers.slice(1, n_offices_per_floor - 1);
+        new_members = new_coworkers.slice(0, n_offices_per_floor - 1); // - 1 because boss
     }
     if (new_door) {
-        for (let floor_n = 0; index < building.n_floors; floor_n++) {
-            door_n = (n_offices_per_floor - 1) + floor_n*n_offices_per_floor;
+        for (let floor_n = 0; floor_n < building.n_floors; floor_n++) {
+            door_n = (n_offices_per_floor - 1) + floor_n*n_offices_per_floor - 1; // - 1 because boss
             new_members.push(new_coworkers[door_n]);
         }
+    }
+
+    // randomly assign sleeping times
+    for (let index = 0; index < new_members.length; index++) {
+        var rand_dur = randint(min_dur, max_dur, false);
+        new_members[index].focus_time = rand_dur;
+        new_members[index].focus_time_left = rand_dur;
     }
 
     // randomly set them as talkers or sleepers
@@ -93,7 +100,7 @@ function reinit_new_coworker_types(min_dur, max_dur, new_door, new_floor) {
 
     // append them to old array in correct places
     if (new_floor) {
-        coworkers.unshift(new_members);
+        coworkers.unshift(...new_members);
     }
     if (new_door) {
         var coworkers_buffer = [];
@@ -102,7 +109,7 @@ function reinit_new_coworker_types(min_dur, max_dur, new_door, new_floor) {
         for (let index = 0; index < coworkers.length; index++) {
             coworkers_buffer.push(coworkers[index]);
             // test if last door
-            if ((index + 1)%(n_offices_per_floor - 1) == 0) {
+            if ((index + 2)%(n_offices_per_floor - 1) == 0) {
                 coworkers_buffer.push(new_coworkers[ncw_ind]);
                 ncw_ind += 1;
             }
@@ -118,16 +125,20 @@ function reinit_new_coworker_types(min_dur, max_dur, new_door, new_floor) {
             talkers.push(index);
         }
     }
-
+    // set up new matches
     for (let index = 0; index < coworkers.length; index++) {
         if (coworkers[index].type == 1) {
-            
+            // get randint from talkers
+            var randind = randint(0, talkers.length - 1);
+            var talker_ind = talkers.splice(randind, 1);
+            coworkers[index].match_coworker = coworkers[talker_ind];
         }
-        var cw_ind = cw_inds[index];
-        var mirror_ind = cw_inds[cw_inds.length - 1 - index];
-        coworkers[cw_ind].type = 0;
-        coworkers[mirror_ind].type = 1;
-        coworkers[mirror_ind].match_coworker = coworkers[cw_ind];
+    }
+
+    // place them in correct doors (i.e. adjust position)
+    for (let index = 0; index < coworkers.length; index++) {
+        const cw = coworkers[index];
+        coworkers[index].pos = {x: cw.door.goal.x, y: cw.door.goal.y};
     }
 
 }
@@ -236,17 +247,16 @@ function get_ind_of_highscore(value, scores) {
 function re_init_all_vars() {
 
     // gameplay-relevant parameters
-    cost_per_door = 15000;
-    time_left = 300; // 3.5 minutes seem realistic
-    n_floors = 1;
-    n_offices_per_floor = 4;
+    time_left = 180; // 3.5 minutes seem realistic
+    n_floors = 1; //1
+    n_offices_per_floor = 4; //4
     floor_height = (canv_h - 1/6)/(n_floors+2);
-    money = 100000; // realistic start: 500000
+    money = 20000; // realistic start: 500000
     min_awake_dur = 0.05*time_left;
     max_awake_dur = 1.0*time_left;
     walk_speed = canv_w/500;
-    cost_of_sleep_per_person_per_frame = 20; // careful: time in frames, not seconds
-    boss_productivity_per_person_per_frame = 12; // gain of money
+    cost_of_sleep_per_person_per_frame = 11; // careful: time in frames, not seconds
+    boss_productivity_per_person_per_frame = 27; // gain of money
     scare_tolerance = 0.0625*canv_w; // how near can coworkers come to boss to not be scared?
     door_check_dur = 0.1 // seconds to wait in front of each door
     stairway_w = canv_w/(11);//(13 - n_offices_per_floor); 
@@ -276,26 +286,43 @@ function re_init_all_vars() {
     init_coworker_types(min_awake_dur, max_awake_dur); // initialize properties of coworkers
 }
 
-function upgrade(new_n_floors, new_n_doors, new_money) {
+function upgrade(new_money, new_door, new_floor) {
     bank_account.balance = new_money;
-    n_floors = new_n_floors;
-    n_offices_per_floor = new_n_doors;
+    min_awake_dur = 0.05*210;//(timer.label*2);
+    max_awake_dur = 1.0*210;//(timer.label*2);
+    if (new_door) {
+        n_floors = building.n_floors;
+        n_offices_per_floor = n_offices_per_floor + 1;
+    }
+    if (new_floor) {
+        n_floors = building.n_floors + 1;
+        n_offices_per_floor = n_offices_per_floor;
+    }
     floor_height = (canv_h - 1/6)/(n_floors+2);
     stairway_w = canv_w/(11);//(13 - n_offices_per_floor); 
     hallway_w = n_offices_per_floor*canv_w/10;
 
     // containers
-    coworkers = [];
+    new_coworkers = [];
     stories = [];
     doors = [];
     doors_path = []; // gets emptied when a door is reached
 
     building = new Building(); // also initializes people
     init_stories(n_floors, true); // seperate function because Story extends Building --> infinite recursion otherwise
-    reinit_coworker_types(min_awake_dur, max_awake_dur); // initialize properties of coworkers
+    coworkers = new_coworkers;
+    // for (let index = 0; index < doors.length; index++) {
+    //     console.log(doors[index].ind);
+    // }
+    // reinit_coworker_types(min_awake_dur, max_awake_dur, new_door, new_floor); // initialize properties of coworkers
+    init_coworker_types(min_awake_dur, max_awake_dur);
 }
 
 function show_start_screen() {
     set_canvas_bg("black");
     draw_canvas_text_flex("Ready", {x: canv_w/2, y: canv_h/2}, "white", canv_w/40, align="center");
 }
+
+// function new_door_ind_after_upgrade(new_n_doors, new_n_floors, new_door, new_floor) {
+    
+// }

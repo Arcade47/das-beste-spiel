@@ -1009,3 +1009,11 @@ function get_distance(pos1, pos2) {
 	var len_y = pos2.y - pos1.y;
 	return Math.sqrt(len_x*len_x + len_y*len_y);
 }
+
+function randint(inc_lower, inc_higher, round=true) {
+	if (round) {
+		return Math.round(Math.random() * (inc_higher - inc_lower) + inc_lower);
+	} else {
+		return Math.random() * (inc_higher - inc_lower) + inc_lower;
+	}
+}

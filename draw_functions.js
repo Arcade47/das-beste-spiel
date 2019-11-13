@@ -441,43 +441,53 @@ function get_color_label(R, G, B, A) {
     return "rgba(" + String(R) + ", " + String(G) + ", " + String(B) + ", " + String(A) + ")";
 }
 
-function show_instructions() {
+function show_instructions1() {
 
     set_canvas_bg("black");
-    if (canvas.width > canvas.height) {  
-        var lines = [
-			"In der folgenden Aufgabe sollen Sie in",
-			"begrenzter Zeit so viel Geld wie möglich erwirtschaften.",
-			"Sie generieren Geld, indem Sie im Büro arbeiten",
-			"und genügend Mitarbeiter produktiv sind.",
-			"Sie können Mitarbeiter produktiv halten,",
-			"indem Sie auf die entsprechenden Türen klicken.",
-			"Beachten Sie aber, dass Sie dann für eine",
-			"gewisse Zeit nicht im Büro sind.",
-			"",
-            "- Clicken/Tippen, um zum Menü zurückzukehren -"
-        ]
-        var ypos = canv_h/10;
-        var step = canv_h/12;
-        var size = canv_w/35;
-    } else {
-        var lines = [
-            "In der folgenden Aufgabe sollen Sie in 210",
-            "Sekunden so viel Geld wie möglich erwirtschaften.",
-            "Sie generieren Geld, indem Sie im Büro arbeiten",
-            "und genügend Mitarbeiter produktiv sind.",
-            "Sie können Mitarbeiter produktiv halten,",
-            "indem Sie auf die entsprechenden Türen klicken.",
-            "Beachten Sie aber, dass Sie dann für",
-            "eine gewisse Zeit nicht im Büro sind.",
-            "",
-            "Wenn Sie keine Fragen mehr haben,",
-            "klicken / tippen Sie, um zu beginnen."
-        ]
-        var ypos = canv_h/7.5;
-        var step = (canv_h - (canv_h/5))/11;
-        var size = canv_w/30;
+	var lines = [
+		"In der folgenden Aufgabe sollen Sie in",
+		"begrenzter Zeit so viel Geld wie möglich erwirtschaften.",
+		"Sie generieren Geld, indem Sie im Büro arbeiten",
+		"und genügend Mitarbeiter produktiv sind.",
+		"Sie können Mitarbeiter produktiv halten,",
+		"indem Sie auf die entsprechenden Türen klicken.",
+		"Beachten Sie aber, dass Sie dann für eine",
+		"gewisse Zeit nicht im Büro sind.",
+		"",
+		"- Clicken/Tippen für nächste Seite -"
+	]
+	var ypos = canv_h/10;
+	var step = canv_h/12;
+	var size = canv_w/35;
+    
+    for (let index = 0; index < lines.length; index++) {
+        const line = lines[index];
+        draw_canvas_text_flex(line, {x: canv_w/2, y: ypos}, "white", size, align="center");
+        ypos += step;
     }
+
+}
+
+function show_instructions2() {
+
+	// TODO remove hardcoding of price
+
+    set_canvas_bg("black");
+	var lines = [
+		"Sobald genügend Geld erwirtschaftet ist",
+		"und wenn alle Mitarbeiter produktiv sind,",
+		"gibt es Gelegenheiten, das Gebäude zu erweitern",
+		"und mehr Mitarbeiter einzustellen.",
+		"Die Kosten pro neue Tür belaufen sich auf",
+		String(cost_per_door) + " €. Kein Rabatt.",
+		"Mehr produktive Mitarbeiter - mehr Geld.",
+		"Entscheiden Sie selbst.",
+		"",
+		"- Clicken/Tippen, um zum Menü zurückzukehren -"
+	]
+	var ypos = canv_h/10;
+	var step = canv_h/12;
+	var size = canv_w/35;
     
     for (let index = 0; index < lines.length; index++) {
         const line = lines[index];

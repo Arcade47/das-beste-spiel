@@ -1,6 +1,6 @@
 // initialization - setup global vars
 
-var game_state = "choose_mode"; // choose_mode instructions game highscores
+var game_state = "choose_mode"; // choose_mode instructions1 instructions2 game highscores
 var hover_arrows_menu = [];
 var best_five_array; // for highscores
 
@@ -18,7 +18,7 @@ var xscale = 1;
 var yscale = 1;
 
 // gameplay-relevant parameters
-var cost_per_door;
+var cost_per_door = 60000;
 var time_left; // 3.5 minutes seem realistic
 var n_floors;
 var n_offices_per_floor;
@@ -373,7 +373,16 @@ class BankAccount {
 
         // draw buying opportunities
         this.opportunities = []; // reset
-        if (boss.in_office) {
+        // only given if boss is in office and no one is sleeping/talking
+        var everybody_productive = true;
+        for (let index = 0; index < coworkers.length; index++) {
+            const cw = coworkers[index];
+            if (cw.sleeping || cw.talking) {
+                everybody_productive = false;
+                break;
+            }
+        }
+        if (boss.in_office && everybody_productive) {
             // 1. door(s)
             if (this.balance > cost_per_door*building.n_floors && n_offices_per_floor < 8) {
                 this.opportunities.push(new Opportunity("door"))
@@ -867,11 +876,12 @@ class Person extends Mover {
         }
 
     }
-    render() {
+    render(label="") {
         // placeholder: strichmaennchen
         // head
         draw_circ_outline(this.head_r, {x: this.pos.x, y: this.pos.y - (this.height - this.head_r)},
         "black", this.head_color);
+        draw_canvas_text_flex(label, {x: this.pos.x, y: this.pos.y - (this.height - this.head_r)}, "red", 20);
         // body
         draw_line([{x: this.pos.x, y: this.pos.y - this.leg_height},
             {x: this.pos.x, y: this.pos.y - this.decap_height}], "black");
@@ -891,7 +901,6 @@ class Person extends Mover {
 class CoWorker extends Person {
     constructor(door, after_upgrade=false) {
         super();
-        this.type = -1; // initialize as not applied yet
         if (!after_upgrade) {
             this.ind = coworkers.length;
         } else {
@@ -902,13 +911,6 @@ class CoWorker extends Person {
         // this.home = door.goal; // to find back to correct door
         this.pos = {x: door.goal.x, y: door.goal.y}; // init at "home" --> linked? try to make copy
         this.floor = door.floor;
-        // random time to sleep
-        // this.awake_time = Math.random()*(max_awake_dur - min_awake_dur) + min_awake_dur;
-        // this.awake_time_left = this.awake_time;
-        // random time to bother others
-        // always set boredom values regardless of type --> only considered in update
-        // this.focus_time = Math.random()*(max_awake_dur - min_awake_dur) + min_awake_dur;
-        // this.focus_time_left = this.focus_time;
         // state variables
         this.base_speed = this.walk_speed; // for resetting it later
         // add to list of coworkers --> only if not upgraded, i.e. first initialization
@@ -1240,8 +1242,12 @@ function draw_all() {
         start_screen(hover_arrows_menu);
     }
 
-    if (game_state == "instructions") {
-        show_instructions();
+    if (game_state == "instructions1") {
+        show_instructions1();
+    }
+
+    if (game_state == "instructions2") {
+        show_instructions2();
     }
 
     if (game_state == "game") {
@@ -1300,7 +1306,7 @@ function mousedown(e) {
 
             if (current_pos.x >= 0 && current_pos.x <= canv_w) {
                 if (current_pos.y >= ypos + 1*step && current_pos.y <= ypos + 2*step) {
-                    game_state = "instructions"
+                    game_state = "instructions1"
                 }
                 if (current_pos.y >= ypos + 2*step && current_pos.y <= ypos + 3*step) {
                     re_init_all_vars();
@@ -1312,7 +1318,11 @@ function mousedown(e) {
 
     }
 
-    else if (game_state == "instructions") {
+    else if (game_state == "instructions1") {
+        game_state = "instructions2";
+    }
+
+    else if (game_state == "instructions2") {
         game_state = "choose_mode";
     }
     
@@ -1346,10 +1356,10 @@ function mousedown(e) {
                 if (opp.clicked_on(current_pos)) {
                     
                     if (opp.type == "door") {
-                        upgrade(building.n_floors, n_offices_per_floor + 1, bank_account.balance - opp.worth);
+                        upgrade(bank_account.balance - opp.worth, true, false);
                     }
                     if (opp.type == "floor") {
-                        upgrade(building.n_floors + 1, n_offices_per_floor, bank_account.balance - opp.worth);
+                        upgrade(bank_account.balance - opp.worth, false, true);
                     }
                     
                 }
