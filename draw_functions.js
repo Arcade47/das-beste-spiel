@@ -1,5 +1,6 @@
 // test: communicate w/ php
 
+
 var game_state = "choose_mode"; // choose_mode instructions game highscores
 
 function resizeCanvas() {
@@ -33,6 +34,24 @@ var ctx = canvas.getContext("2d");
 resizeCanvas();
 var canv_w = canvas.width;
 var canv_h = canvas.height;
+
+function draw_canvas_text_flex(string, pos, color, size, align) {
+	
+	var align = align || "center";
+
+	ctx.font = String(size)+"px Arial";
+	ctx.fillStyle=color;
+	ctx.textAlign = align; 
+	ctx.fillText(string, pos.x, pos.y);
+	
+}
+
+try {
+	var cw_inds = [...Array(5).keys()];
+} catch {
+	draw_canvas_text_flex("PLEASE DO NOT USE INTERNET EXPLORER",
+	{x: canv_w/2, y: canv_h2/2}, "red", 50);
+}
 
 // var horizontal_screen = true;
 // var vertical_screen = false;
@@ -129,7 +148,8 @@ function draw_line(coords, color) {
 	ctx.closePath();
 }
 
-function draw_path(coords, color, thickness=Math.max(1, canv_w/500)) {
+function draw_path(coords, color, thickness) {
+	var thickness = thickness || Math.max(1, canv_w/500);
 	ctx.beginPath();
 	ctx.lineWidth=thickness;
 	ctx.strokeStyle=color;
@@ -208,7 +228,8 @@ function draw_speech_bubble(text, pos) {
 	draw_canvas_text_flex(text, {x: pos.x + 0.025*canv_h, y: pos.y - 0.025*canv_h - 0.01*canv_h}, "black", 0.9*font_size, align="center");
 }
 
-function draw_textbox(lines, pos, len=1) {
+function draw_textbox(lines, pos, len, active) {
+
 	var w = len*(canv_w/8);
 	var h = (canv_w/35)*lines.length + (canv_w/50);
 
@@ -216,14 +237,26 @@ function draw_textbox(lines, pos, len=1) {
 	pos.x -= w/2;
 	pos.y -= h/2;
 
-	draw_rect_outline(pos, w, h, "GoldenRod", "Gold");
+	console.log(active)
+
+	if (active) {
+		var color1 = "GoldenRod";
+		var color2 = "Gold";
+		var color3 = "DarkViolet";
+	} else {
+		var color1 = "black";
+		var color2 = "DarkGrey";
+		var color3 = "black";
+	}
+
+	draw_rect_outline(pos, w, h, color1, color2);
 
 	var step = canv_w/35;
 	var size = canv_w/35;
 
 	for (let index = 0; index < lines.length; index++) {
 		const line = lines[index];
-		draw_canvas_text_flex(line, {x: pos.x + w/2, y: pos.y + (canv_w/35) + (canv_w/100)}, "DarkViolet", size, align="center");
+		draw_canvas_text_flex(line, {x: pos.x + w/2, y: pos.y + (canv_w/35) + (canv_w/100)}, color3, size, align="center");
 		pos.y += step;
 	}
 
@@ -257,22 +290,15 @@ function draw_rect_outline(coord, w, h, strokecolor, fillcolor) {
 	ctx.fill();
 }
 
-function draw_debug_text(string, pos = {x: canvas.width/4, y: canvas.height/2}) {
+function draw_debug_text(string, pos) {
+
+	var pos = pos || {x: canvas.width/4, y: canvas.height/2};
 	
 	ctx.font = "40px Arial";
 	ctx.strokeStyle="red";
 	ctx.fillStyle="red";
 	ctx.strokeText(string, pos.x, pos.y);
 	ctx.fillText(string, pos.x, pos.y); 
-	
-}
-
-function draw_canvas_text_flex(string, pos, color, size, align="center") {
-	
-	ctx.font = String(size)+"px Arial";
-	ctx.fillStyle=color;
-	ctx.textAlign = align; 
-	ctx.fillText(string, pos.x, pos.y);
 	
 }
 

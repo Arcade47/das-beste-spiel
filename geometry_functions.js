@@ -36,7 +36,10 @@ function getXY(e) {
 	
 }
 
-function getXY_exact(e, xscale=1, yscale=1) {
+function getXY_exact(e, xscale, yscale) {
+
+	var xscale = xscale || 1;
+	var yscale = yscale || 1;
 	
 	// return exact position relative to canvas (for physics)
 	if (canvas.height > canvas.width) {
@@ -1010,10 +1013,58 @@ function get_distance(pos1, pos2) {
 	return Math.sqrt(len_x*len_x + len_y*len_y);
 }
 
-function randint(inc_lower, inc_higher, round=true) {
+function randint(inc_lower, inc_higher, round) {
+
+	var round = round || true;
+
 	if (round) {
 		return Math.round(Math.random() * (inc_higher - inc_lower) + inc_lower);
 	} else {
 		return Math.random() * (inc_higher - inc_lower) + inc_lower;
+	}
+}
+
+function get_browser() {
+	// Opera 8.0+
+	var isOpera = (!!window.opr && !!opr.addons) || !!window.opera || navigator.userAgent.indexOf(' OPR/') >= 0;
+
+	// Firefox 1.0+
+	var isFirefox = typeof InstallTrigger !== 'undefined';
+
+	// Safari 3.0+ "[object HTMLElementConstructor]" 
+	var isSafari = /constructor/i.test(window.HTMLElement) || (function (p) { return p.toString() === "[object SafariRemoteNotification]"; })(!window['safari'] || (typeof safari !== 'undefined' && safari.pushNotification));
+
+	// Internet Explorer 6-11
+	var isIE = /*@cc_on!@*/false || !!document.documentMode;
+
+	// Edge 20+
+	var isEdge = !isIE && !!window.StyleMedia;
+
+	// Chrome 1 - 71
+	var isChrome = !!window.chrome && (!!window.chrome.webstore || !!window.chrome.runtime);
+
+	// Blink engine detection
+	var isBlink = (isChrome || isOpera) && !!window.CSS;
+
+	if (isFirefox) {
+		return "isFirefox";
+	}
+	if (isChrome) {
+		return "isChrome";
+	}
+	if (isSafari) {
+		return "isSafari";
+	}
+	if (isOpera) {
+		return "isOpera";
+	}
+	if (isIE) {
+		return "isIE";
+	}
+	if (isEdge) {
+		return "isEdge";
+	}
+	if (isBlink) {
+		return "isBlink";
 	}
 }

@@ -55,17 +55,18 @@ var endTime, secondsElapsed;
 
 var skycolor = "blue";
 
+var tapped_active = false;
+
 // add event listeners
 // document.addEventListener("mousemove", mousemove);
 document.addEventListener("mousedown", mousedown);
 document.addEventListener("mousemove", mousemove);
-document.addEventListener('touchstart', tap); // TODO: find out whether single quotes necessary here
+document.addEventListener("touchstart", tapped);
+document.addEventListener("touchend", not_tapped);
 window.addEventListener('orientationchange', resizeCanvas, false);
 window.addEventListener('resize', resizeCanvas, false);
 
 
-// ask allowance to read/write (for later highscores)
-// window.webkitRequestFileSystem(window.PERSISTENT, 1024*1024, savefile);
 
 // classes
 
@@ -87,8 +88,9 @@ class Text {
 }
 
 class Opportunity {
-    constructor(type) {
+    constructor(type, active) {
         this.type = type;
+        this.active = active;
         this.horizontal_lines = 1;
         this.vertical_lines = 1;
         this.worth = 0;
@@ -121,21 +123,24 @@ class Opportunity {
     }
     clicked_on(pos) {
         if (pos.x >= this.x1 && pos.x <= this.x2 && pos.y >= this.y1 && pos.y <= this.y2) {
-            return true;
+            if (this.active) {
+                return true;
+            }
         } // else
         return false;
     }
     render() {
         if (this.type == "door") {
+
             // plural
             var add = "";
             if (building.n_floors > 1) add = "S";
             
-            draw_textbox(["BÜRO"+add, "KAUFEN", String((cost_per_door*building.n_floors)/1000)+" K"], this.pos);
+            draw_textbox(["BÜRO"+add, "KAUFEN", String((cost_per_door*building.n_floors)/1000)+" K"], this.pos, 1, this.active);
         }
         if (this.type == "floor") {
             
-            draw_textbox(["ETAGE KAUFEN "+String((cost_per_door*n_offices_per_floor)/1000)+" K"], this.pos, 3);
+            draw_textbox(["ETAGE KAUFEN "+String((cost_per_door*n_offices_per_floor)/1000)+" K"], this.pos, 3, this.active);
         }
     }
 }
@@ -176,22 +181,26 @@ class Timer extends Text {
             // append to database
 
             var name = window.prompt("Well done! Put your name in here: ", "");
-            name.replace("|", ""); // make sure splitting works correctly...
-            if (name.length > 25) {
-                name = name.slice(0,24);
-            }
 
-            var xmlhttp = new XMLHttpRequest();
-            xmlhttp.onreadystatechange = function() {
-                if (this.readyState == 4 && this.status == 200) {
-                    var best_five = this.responseText;
-                    best_five_array = best_five.split("|a||b|")[0]; // eliminate empty rows
-                    best_five_array = best_five_array.split("|b|");
-                    best_five_array.pop();
+            // handle case when pressed "cancel" --> therefore "try"
+            try {
+                name.replace("|", ""); // make sure splitting works correctly...
+                if (name.length > 25) {
+                    name = name.slice(0,24);
                 }
-            }
-            xmlhttp.open("GET", "add_to_highscores.php?q="+name+"|"+String(score), false);
-            xmlhttp.send();
+
+                var xmlhttp = new XMLHttpRequest();
+                xmlhttp.onreadystatechange = function() {
+                    if (this.readyState == 4 && this.status == 200) {
+                        var best_five = this.responseText;
+                        best_five_array = best_five.split("|a||b|")[0]; // eliminate empty rows
+                        best_five_array = best_five_array.split("|b|");
+                        best_five_array.pop();
+                    }
+                }
+                xmlhttp.open("GET", "add_to_highscores.php?q="+name+"|"+String(score), false);
+                xmlhttp.send();
+            } catch {}
 
             // reload scores from database
 
@@ -375,23 +384,27 @@ class BankAccount {
         this.opportunities = []; // reset
         // only given if boss is in office and no one is sleeping/talking
         var everybody_productive = true;
-        for (let index = 0; index < coworkers.length; index++) {
-            const cw = coworkers[index];
-            if (cw.sleeping || cw.talking) {
-                everybody_productive = false;
-                break;
+        if (!boss.in_office) {
+            everybody_productive = false;
+        } else {
+            for (let index = 0; index < coworkers.length; index++) {
+                const cw = coworkers[index];
+                if (cw.sleeping || cw.talking) {
+                    everybody_productive = false;
+                    break;
+                }
             }
         }
-        if (boss.in_office && everybody_productive) {
-            // 1. door(s)
-            if (this.balance > cost_per_door*building.n_floors && n_offices_per_floor < 8) {
-                this.opportunities.push(new Opportunity("door"))
-            }
-            // 2. floor
-            if (this.balance > cost_per_door*n_offices_per_floor && building.n_floors < 6) {
-                this.opportunities.push(new Opportunity("floor"))
-            }
+
+        // 1. door(s)
+        if (this.balance > cost_per_door*building.n_floors && n_offices_per_floor < 8) {
+            this.opportunities.push(new Opportunity("door", everybody_productive))
         }
+        // 2. floor
+        if (this.balance > cost_per_door*n_offices_per_floor && building.n_floors < 6) {
+            this.opportunities.push(new Opportunity("floor", everybody_productive))
+        }
+
 
         // set game over
         if (this.balance <= 0) {
@@ -496,7 +509,8 @@ class Stairs extends Building {
 }
 
 class Story extends Building { // here also doors are added
-    constructor(floor_n, after_upgrade=false) {
+    constructor(floor_n, after_upgrade) {
+        var after_upgrade = after_upgrade || false;
         super();
         this.n_doors = n_offices_per_floor;
         this.floor_n = floor_n;
@@ -876,7 +890,10 @@ class Person extends Mover {
         }
 
     }
-    render(label="") {
+    render(label) {
+
+        var label = label || "";
+
         // placeholder: strichmaennchen
         // head
         draw_circ_outline(this.head_r, {x: this.pos.x, y: this.pos.y - (this.height - this.head_r)},
@@ -899,7 +916,8 @@ class Person extends Mover {
 }
 
 class CoWorker extends Person {
-    constructor(door, after_upgrade=false) {
+    constructor(door, after_upgrade) {
+        var after_upgrade = after_upgrade || false;
         super();
         if (!after_upgrade) {
             this.ind = coworkers.length;
@@ -1201,6 +1219,7 @@ class Grass {
 
 function update() {
 
+    console.log(tapped_active)
     // only update if ingame
     if (game_state == "game") {
         // keep track of time in seconds
@@ -1293,11 +1312,21 @@ function draw_all() {
 
 function mousedown(e) {
 
+    if (!tapped_active) {
+        selected(e);
+    }
+    
+}
+
+function selected(e) {
+
+    console.log(game_state)
+
     if (game_state == "choose_mode") {
 
         current_pos = getXY_exact(e, xscale, yscale);
 
-        if (e.which == 1) { // LMB
+        // if (e.which == 1) { // LMB
 
             // check at which height --> which menu option is clicked
 
@@ -1314,7 +1343,7 @@ function mousedown(e) {
                 }
             }
 
-        }
+        // }
 
     }
 
@@ -1330,7 +1359,7 @@ function mousedown(e) {
 
         current_pos = getXY_exact(e, xscale, yscale);
 
-        if (e.which == 1) { // LMB
+        // if (e.which == 1) { // LMB
             // check whether clicked in doors
             for (let index = 0; index < doors.length; index++) {
                 if (doors[index].clicked_on(current_pos)) {
@@ -1364,7 +1393,7 @@ function mousedown(e) {
                     
                 }
             }
-        }
+        // }
 
     }
     
@@ -1375,15 +1404,18 @@ function mousedown(e) {
     }
 }
 
-function tap(e) {
-    
-    // make sure there is only one touch
-    if (e.touches.length == 1) {
+function tapped(e) {
 
-        // same functions as when mouse clicked
-        mousedown(e);
+    tapped_active = false; // TODO why tf does this has to be this way around?
+    selected(e.changedTouches[0]);
+    // e.preventDefault();
+    // selected(e);
 
-    }
+}
+
+function not_tapped(e) {
+
+    tapped_active = true;
 }
 
 function mousemove(e) {
