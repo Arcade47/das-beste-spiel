@@ -8,7 +8,7 @@ The employees help in this regard, but only as long as they are productive!
 
 To play a version of this game with highscores 'n stuff, please follow this link:
 
-kricki.rocks/daBoss_test
+[kricki.rocks/daBoss_test](kricki.rocks/daBoss_test)
 
 !! And don't even think about using Internet Explorer !!
 
