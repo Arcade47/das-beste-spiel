@@ -4,6 +4,12 @@ A highly realistic simulation of the everyday duties of a boss overseeing severa
 The goal is, at the end of the day, to generate money. At the very least not lose all of it.
 The employees help in this regard, but only as long as they are productive!
 
+## Please note
+
+To play a version of this game with highscores 'n stuff, please follow this link:
+kricki.rocks/daBoss_test
+!! And don't even think about using Internet Explorer !!
+
 ## How to play
 
 To start the simulation, first press enter. Instructions in German appear, press space to proceed.
